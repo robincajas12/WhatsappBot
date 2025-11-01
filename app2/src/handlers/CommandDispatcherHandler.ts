@@ -7,6 +7,8 @@ import { AiOnCommand } from '../commands/AiOnCommand.js';
 import { AiOffCommand } from '../commands/AiOffCommand.js';
 import { AddAiCommand } from '../commands/AddAiCommand.js';
 import { RemoveAiCommand } from '../commands/RemoveAiCommand.js';
+import { BusyOnCommand } from '../commands/BusyOnCommand.js';
+import { BusyOffCommand } from '../commands/BusyOffCommand.js';
 
 const OWNER_JID = process.env.OWNER_JID;
 
@@ -25,6 +27,8 @@ export class CommandDispatcherHandler extends AbstractMessageHandler {
         this.commandMap.set('!ai off', new AiOffCommand());
         this.commandMap.set('!add', new AddAiCommand());
         this.commandMap.set('!remove', new RemoveAiCommand());
+        this.commandMap.set('!busy on', new BusyOnCommand());
+        this.commandMap.set('!busy off', new BusyOffCommand());
     }
 
     public async handle(message: WAMessage, sock: ReturnType<typeof makeWASocket>): Promise<void> {
@@ -38,7 +42,11 @@ export class CommandDispatcherHandler extends AbstractMessageHandler {
             const command = this.commandMap.get(commandKey)!;
 
             // Admin command guard
-            if (command instanceof AddAiCommand || command instanceof RemoveAiCommand) {
+            if (command instanceof AddAiCommand || 
+                command instanceof RemoveAiCommand ||
+                command instanceof BusyOnCommand ||
+                command instanceof BusyOffCommand
+            ) {
                 if (!OWNER_JID || (message.key.fromMe === false && sender !== OWNER_JID) ) {
                     console.log(`Non-owner ${sender} tried to use admin command: ${commandKey}`);
                     return; // Silently fail for security

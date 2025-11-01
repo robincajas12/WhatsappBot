@@ -8,6 +8,8 @@ import dotenv from 'dotenv';
 import { CommandDispatcherHandler } from './handlers/CommandDispatcherHandler.js';
 import { AIPermissionHandler } from './handlers/otherPeopleHandlers/AIPermissionHandler.js';
 import { AIResponseHandler } from './handlers/otherPeopleHandlers/AIResponseHandler.js';
+import { BusyModeHandler } from './handlers/otherPeopleHandlers/BusyModeHandler.js';
+import { GroupMessageBlocker } from './handlers/GroupMessageBlocker.js';
 
 // General Handlers
 import { PingHandler } from './handlers/meHandlers/PingHandler.js';
@@ -26,24 +28,31 @@ async function connectToWhatsApp() {
 
     // --- Handler Chain Setup ---
 
-    // Create handlers
-    const commandDispatcher = new CommandDispatcherHandler();
+    // Build the public chain (for other users)
+    const publicChain = new GroupMessageBlocker();
+    const publicCommandDispatcher = new CommandDispatcherHandler();
+    const busyModeHandler = new BusyModeHandler();
     const aiPermissionHandler = new AIPermissionHandler();
     const aiResponseHandler = new AIResponseHandler();
-    const pingHandler = new PingHandler();
-    const helpHandler = new HelpHandler();
+    const publicPingHandler = new PingHandler();
+    const publicHelpHandler = new HelpHandler();
 
-    // Build the public chain (for other users)
-    const publicChain = commandDispatcher;
-    commandDispatcher.setNext(aiPermissionHandler);
+    publicChain.setNext(publicCommandDispatcher);
+    publicCommandDispatcher.setNext(busyModeHandler);
+    busyModeHandler.setNext(aiPermissionHandler);
     aiPermissionHandler.setNext(aiResponseHandler);
-    aiResponseHandler.setNext(pingHandler);
-    pingHandler.setNext(helpHandler);
+    aiResponseHandler.setNext(publicPingHandler);
+    publicPingHandler.setNext(publicHelpHandler);
 
-    // Build the admin chain (for you). It only processes commands and general handlers.
-    const adminChain = new CommandDispatcherHandler();
-    adminChain.setNext(pingHandler);
-    pingHandler.setNext(helpHandler);
+    // Build the admin chain (for you)
+    const adminChain = new GroupMessageBlocker();
+    const adminCommandDispatcher = new CommandDispatcherHandler();
+    const adminPingHandler = new PingHandler();
+    const adminHelpHandler = new HelpHandler();
+
+    adminChain.setNext(adminCommandDispatcher);
+    adminCommandDispatcher.setNext(adminPingHandler);
+    adminPingHandler.setNext(adminHelpHandler);
 
 
     // --- Socket Event Listeners ---
