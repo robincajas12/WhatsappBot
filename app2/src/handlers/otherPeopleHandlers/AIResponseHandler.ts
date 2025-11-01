@@ -3,21 +3,23 @@ import makeWASocket from "@whiskeysockets/baileys";
 import { AbstractMessageHandler } from "../AbstractMessageHandler.js";
 import { GoogleGenAI } from "@google/genai";
 import { DatabaseService, ChatMessage } from "../../database.js";
+import Gemini from "../../ai/services/Gemini.js";
+import AI from "../../ai/interfaces/AI.js";
 
 const API_KEY = process.env.GOOGLE_API_KEY;
 
 export class AIResponseHandler extends AbstractMessageHandler {
-    private static ai: GoogleGenAI | null;
+    private static ai: AI | null;
     private static dbService = new DatabaseService();
 
     constructor() {
         super();
     }
 
-    private static getAIInstance(): GoogleGenAI {
+    private static getAIInstance(): AI {
         if (!AIResponseHandler.ai) {
             if (!API_KEY) throw new Error("Falta API_KEY en las variables de entorno");
-            AIResponseHandler.ai = new GoogleGenAI({ apiKey: API_KEY });
+            AIResponseHandler.ai = new Gemini(API_KEY);
         }
         return AIResponseHandler.ai;
     }
@@ -41,15 +43,12 @@ export class AIResponseHandler extends AbstractMessageHandler {
 
             const systemInstruction = `You are a helpful assistant. Someone sent the following WhatsApp message. Based on the provided history, write a short, friendly, and concise reply in the same language as the message. Keep it under 3 sentences. Use plain text only, no markdown or special formatting. Default language is Spanish.`;
 
-            const result = await aiInstance.models.generateContent({
-                model: "gemini-2.5-flash",
-                contents: newConversation,
-                config: {
-                    systemInstruction: systemInstruction,
-                },
-            });
+            const result = await aiInstance.ask(
+                newConversation,
+                systemInstruction
+            );
 
-            const responseText = result.text?.trim() || null;
+            const responseText = result;
 
             if (responseText) {
                 const footer = "\n\n---\nEsta respuesta fue generada por IA. Para más opciones, escribe !menu.";
