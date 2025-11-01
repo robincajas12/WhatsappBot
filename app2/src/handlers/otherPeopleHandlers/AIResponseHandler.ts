@@ -2,13 +2,13 @@ import { WAMessage } from "@whiskeysockets/baileys";
 import makeWASocket from "@whiskeysockets/baileys";
 import { AbstractMessageHandler } from "../AbstractMessageHandler.js";
 import { GoogleGenAI } from "@google/genai";
-import { ChatHistory, ChatMessage } from "../../database.js";
+import { DatabaseService, ChatMessage } from "../../database.js";
 
 const API_KEY = process.env.GOOGLE_API_KEY;
 
 export class AIResponseHandler extends AbstractMessageHandler {
     private static ai: GoogleGenAI | null;
-    private static chatHistory = new ChatHistory();
+    private static dbService = new DatabaseService();
 
     constructor() {
         super();
@@ -23,25 +23,17 @@ export class AIResponseHandler extends AbstractMessageHandler {
     }
 
     public async handle(message: WAMessage, sock: ReturnType<typeof makeWASocket>): Promise<void> {
+        // This handler is now only called if AIPermissionHandler allows it.
         const userId = message.key.remoteJid;
         const messageBody = message.message?.conversation || message.message?.extendedTextMessage?.text || "";
 
         if (!userId || !messageBody) {
-            await super.handle(message, sock);
-            return;
-        }
-
-        let aiInstance: GoogleGenAI;
-        try {
-            aiInstance = AIResponseHandler.getAIInstance();
-        } catch (e) {
-            console.error("Error inicializando GoogleGenAI:", e);
-            await super.handle(message, sock);
-            return;
+            return; // Stop if no user or message body
         }
 
         try {
-            const history = AIResponseHandler.chatHistory.getHistory(userId);
+            const aiInstance = AIResponseHandler.getAIInstance();
+            const history = AIResponseHandler.dbService.getHistory(userId);
             const newConversation: ChatMessage[] = [
                 ...history,
                 { role: "user", parts: [{ text: messageBody }] }
@@ -60,18 +52,20 @@ export class AIResponseHandler extends AbstractMessageHandler {
             const responseText = result.text?.trim() || null;
 
             if (responseText) {
-                await sock.sendMessage(userId, { text: responseText });
-                // Save both user message and model response to the database
-                AIResponseHandler.chatHistory.addMessage(userId, 'user', messageBody);
-                AIResponseHandler.chatHistory.addMessage(userId, 'model', responseText);
+                const footer = "\n\n---\nEsta respuesta fue generada por IA. Para más opciones, escribe !menu.";
+                const fullResponse = responseText + footer;
+                await sock.sendMessage(userId, { text: fullResponse });
+                
+                // Save interaction to the database (original response without footer)
+                AIResponseHandler.dbService.addMessage(userId, 'user', messageBody);
+                AIResponseHandler.dbService.addMessage(userId, 'model', responseText);
             } else {
                 console.warn("Respuesta vacía del modelo.");
-                await super.handle(message, sock);
             }
 
         } catch (error) {
-            console.error("Error llamando a Gemini API o en la lógica de historial:", error);
-            await super.handle(message, sock);
+            console.error("Error en AIResponseHandler:", error);
         }
+        // We don't call super.handle() here because this is the end of this specific chain.
     }
 }
