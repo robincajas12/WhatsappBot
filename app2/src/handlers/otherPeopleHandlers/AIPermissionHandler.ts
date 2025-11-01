@@ -17,7 +17,7 @@ export class AIPermissionHandler extends AbstractMessageHandler {
         }
 
         // Individual user check: User must be in the DB and have AI enabled.
-        if (userId && AIPermissionHandler.dbService.isAiEnabled(userId)) {
+        if (userId && await AIPermissionHandler.dbService.isAiEnabled(userId)) {
             // If both global and user-level permissions are met, pass to the next handler (AIResponseHandler)
             await super.handle(message, sock);
         } else {

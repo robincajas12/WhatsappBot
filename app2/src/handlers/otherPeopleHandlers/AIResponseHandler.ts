@@ -33,7 +33,7 @@ export class AIResponseHandler extends AbstractMessageHandler {
 
         try {
             const aiInstance = AIResponseHandler.getAIInstance();
-            const history = AIResponseHandler.dbService.getHistory(userId);
+            const history = await AIResponseHandler.dbService.getHistory(userId);
             const newConversation: ChatMessage[] = [
                 ...history,
                 { role: "user", parts: [{ text: messageBody }] }
@@ -57,8 +57,8 @@ export class AIResponseHandler extends AbstractMessageHandler {
                 await sock.sendMessage(userId, { text: fullResponse });
                 
                 // Save interaction to the database (original response without footer)
-                AIResponseHandler.dbService.addMessage(userId, 'user', messageBody);
-                AIResponseHandler.dbService.addMessage(userId, 'model', responseText);
+                await AIResponseHandler.dbService.addMessage(userId, 'user', messageBody);
+                await AIResponseHandler.dbService.addMessage(userId, 'model', responseText);
             } else {
                 console.warn("Respuesta vacía del modelo.");
             }

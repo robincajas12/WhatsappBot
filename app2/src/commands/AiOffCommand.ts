@@ -10,12 +10,12 @@ export class AiOffCommand implements Command {
         const userId = message.key.remoteJid;
         if (!userId) return;
 
-        const userExists = AiOffCommand.dbService.userExists(userId);
+        const userExists = await AiOffCommand.dbService.userExists(userId);
 
         if (userExists) {
-            const canToggle = AiOffCommand.dbService.canUserToggleAi(userId);
+            const canToggle = await AiOffCommand.dbService.canUserToggleAi(userId);
             if (canToggle) {
-                AiOffCommand.dbService.setUserAiStatus(userId, false);
+                await AiOffCommand.dbService.setUserAiStatus(userId, false);
                 await sock.sendMessage(userId, { text: '🤖 IA desactivada. No responderé a tus mensajes. Escribe `!ai on` para reactivarme.' });
             } else {
                 await sock.sendMessage(userId, { text: 'El acceso a la IA para este chat es gestionado por el administrador.' });

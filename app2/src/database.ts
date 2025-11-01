@@ -1,5 +1,6 @@
 
-import Database from 'better-sqlite3';
+import pkg from 'sqlite3';
+const { Database } = pkg;
 
 // Define the structure of a message for our history, compatible with GoogleGenAI
 export interface ChatMessage {
@@ -8,16 +9,58 @@ export interface ChatMessage {
 }
 
 export class DatabaseService {
-    private db;
+    private db: InstanceType<typeof Database>;
 
     constructor(dbPath: string = 'chat_history.db') {
-        this.db = new Database(dbPath);
-        this.init();
+        this.db = new Database(dbPath, (err: Error | null) => {
+            if (err) {
+                console.error('Could not connect to database', err);
+            } else {
+                console.log('Connected to SQLite database');
+                this.init();
+            }
+        });
     }
 
-    private init(): void {
+    private run(sql: string, params: any[] = []): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this.db.run(sql, params, function (err: Error | null) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+
+    private get<T>(sql: string, params: any[] = []): Promise<T | undefined> {
+        return new Promise((resolve, reject) => {
+            this.db.get(sql, params, (err: Error | null, row: T) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(row);
+                }
+            });
+        });
+    }
+
+    private all<T>(sql: string, params: any[] = []): Promise<T[]> {
+        return new Promise((resolve, reject) => {
+            this.db.all(sql, params, (err: Error | null, rows: T[]) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows);
+                }
+            });
+        });
+    }
+
+    private async init(): Promise<void> {
         // Create messages table
-        this.db.exec(`
+        await this.run(`
             CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id TEXT NOT NULL,
@@ -28,7 +71,7 @@ export class DatabaseService {
         `);
 
         // Create users table
-        this.db.exec(`
+        await this.run(`
             CREATE TABLE IF NOT EXISTS users (
                 user_id TEXT PRIMARY KEY,
                 ai_enabled INTEGER DEFAULT 1,
@@ -39,58 +82,51 @@ export class DatabaseService {
 
     // --- User Management Methods ---
 
-    public addUser(userId: string, canToggle: boolean): void {
-        const stmt = this.db.prepare(`
+    public async addUser(userId: string, canToggle: boolean): Promise<void> {
+        await this.run(`
             INSERT OR REPLACE INTO users (user_id, can_toggle_ai, ai_enabled) VALUES (?, ?, 1)
-        `);
-        stmt.run(userId, canToggle ? 1 : 0);
+        `, [userId, canToggle ? 1 : 0]);
     }
 
-    public removeUser(userId: string): void {
-        const stmt = this.db.prepare('DELETE FROM users WHERE user_id = ?');
-        stmt.run(userId);
+    public async removeUser(userId: string): Promise<void> {
+        await this.run('DELETE FROM users WHERE user_id = ?', [userId]);
     }
 
-    public isAiEnabled(userId: string): boolean {
-        const stmt = this.db.prepare('SELECT ai_enabled FROM users WHERE user_id = ?');
-        const user = stmt.get(userId) as { ai_enabled: number };
+    public async isAiEnabled(userId: string): Promise<boolean> {
+        const user = await this.get<{ ai_enabled: number }>('SELECT ai_enabled FROM users WHERE user_id = ?', [userId]);
         return user ? user.ai_enabled === 1 : false;
     }
 
-    public canUserToggleAi(userId: string): boolean {
-        const stmt = this.db.prepare('SELECT can_toggle_ai FROM users WHERE user_id = ?');
-        const user = stmt.get(userId) as { can_toggle_ai: number };
+    public async canUserToggleAi(userId: string): Promise<boolean> {
+        const user = await this.get<{ can_toggle_ai: number }>('SELECT can_toggle_ai FROM users WHERE user_id = ?', [userId]);
         return user ? user.can_toggle_ai === 1 : false;
     }
 
-    public setUserAiStatus(userId: string, isEnabled: boolean): void {
-        const stmt = this.db.prepare('UPDATE users SET ai_enabled = ? WHERE user_id = ?');
-        stmt.run(isEnabled ? 1 : 0, userId);
+    public async setUserAiStatus(userId: string, isEnabled: boolean): Promise<void> {
+        await this.run('UPDATE users SET ai_enabled = ? WHERE user_id = ?', [isEnabled ? 1 : 0, userId]);
     }
 
-    public userExists(userId: string): boolean {
-        const stmt = this.db.prepare('SELECT 1 FROM users WHERE user_id = ?');
-        return !!stmt.get(userId);
+    public async userExists(userId: string): Promise<boolean> {
+        const row = await this.get<{ 1: number }>('SELECT 1 FROM users WHERE user_id = ?', [userId]);
+        return !!row;
     }
 
     // --- Chat History Methods ---
 
-    public addMessage(userId: string, role: 'user' | 'model', content: string): void {
-        const stmt = this.db.prepare(`
+    public async addMessage(userId: string, role: 'user' | 'model', content: string): Promise<void> {
+        await this.run(`
             INSERT INTO messages (user_id, role, content) VALUES (?, ?, ?)
-        `);
-        stmt.run(userId, role, content);
-        this.trimHistory(userId);
+        `, [userId, role, content]);
+        await this.trimHistory(userId);
     }
 
-    public getHistory(userId: string, limit: number = 10): ChatMessage[] {
-        const stmt = this.db.prepare(`
+    public async getHistory(userId: string, limit: number = 10): Promise<ChatMessage[]> {
+        const rows = await this.all<{ role: 'user' | 'model'; content: string }>(`
             SELECT role, content FROM messages
             WHERE user_id = ?
             ORDER BY timestamp DESC
             LIMIT ?
-        `);
-        const rows = stmt.all(userId, limit) as { role: 'user' | 'model'; content: string }[];
+        `, [userId, limit]);
         
         return rows.reverse().map(row => ({
             role: row.role,
@@ -98,16 +134,16 @@ export class DatabaseService {
         }));
     }
 
-    private trimHistory(userId: string, keep: number = 10): void {
-        this.db.exec(`
+    private async trimHistory(userId: string, keep: number = 10): Promise<void> {
+        await this.run(`
             DELETE FROM messages
-            WHERE user_id = '${userId}' AND id NOT IN (
+            WHERE user_id = ? AND id NOT IN (
                 SELECT id FROM messages
-                WHERE user_id = '${userId}'
+                WHERE user_id = ?
                 ORDER BY timestamp DESC
-                LIMIT ${keep}
+                LIMIT ?
             )
-        `);
+        `, [userId, userId, keep]);
     }
 
     public close(): void {
