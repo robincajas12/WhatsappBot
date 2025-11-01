@@ -24,24 +24,27 @@ async function connectToWhatsApp() {
         logger: pino({ level: 'silent' })
     });
 
-    // --- Setup a single, linear Chain of Responsibility ---
+    // --- Handler Chain Setup ---
+
+    // Create handlers
     const commandDispatcher = new CommandDispatcherHandler();
     const aiPermissionHandler = new AIPermissionHandler();
     const aiResponseHandler = new AIResponseHandler();
     const pingHandler = new PingHandler();
     const helpHandler = new HelpHandler();
 
-    // 1. Dispatcher handles all commands first.
-    // 2. If not a command, it falls through to the AI Permission Handler.
-    // 3. If AI is permitted, it falls through to the AI Response Handler.
-    // 4. General handlers like Ping and Help can be at the end.
+    // Build the public chain (for other users)
+    const publicChain = commandDispatcher;
     commandDispatcher.setNext(aiPermissionHandler);
     aiPermissionHandler.setNext(aiResponseHandler);
     aiResponseHandler.setNext(pingHandler);
     pingHandler.setNext(helpHandler);
 
-    // The start of our chain is the command dispatcher.
-    const messageHandler = commandDispatcher;
+    // Build the admin chain (for you). It only processes commands and general handlers.
+    const adminChain = new CommandDispatcherHandler();
+    adminChain.setNext(pingHandler);
+    pingHandler.setNext(helpHandler);
+
 
     // --- Socket Event Listeners ---
 
@@ -69,8 +72,12 @@ async function connectToWhatsApp() {
             return;
         }
 
-        // The single entry point for all message handling
-        await messageHandler.handle(msg, sock);
+        // Route message to the appropriate chain based on sender
+        if (msg.key.fromMe) {
+            await adminChain.handle(msg, sock);
+        } else {
+            await publicChain.handle(msg, sock);
+        }
     });
 }
 
