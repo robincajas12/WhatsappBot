@@ -1,6 +1,4 @@
-
-import pkg from 'sqlite3';
-const { Database } = pkg;
+import mongoose, { Schema, Document } from 'mongoose';
 
 // Define the structure of a message for our history, compatible with GoogleGenAI
 export interface ChatMessage {
@@ -8,145 +6,132 @@ export interface ChatMessage {
     parts: { text: string }[];
 }
 
+// --- Mongoose Interfaces ---
+
+interface IUser extends Document {
+    userId: string;
+    ai_enabled: boolean;
+    can_toggle_ai: boolean;
+}
+
+interface IMessage extends Document {
+    userId: string;
+    role: 'user' | 'model';
+    content: string;
+    timestamp: Date;
+}
+
+// --- Mongoose Schemas ---
+
+const UserSchema: Schema = new Schema({
+    userId: { type: String, required: true, unique: true },
+    ai_enabled: { type: Boolean, default: true },
+    can_toggle_ai: { type: Boolean, default: false },
+});
+
+const MessageSchema: Schema = new Schema({
+    userId: { type: String, required: true },
+    role: { type: String, required: true },
+    content: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now },
+});
+
+// --- Mongoose Models ---
+
+const UserModel = mongoose.model<IUser>('User', UserSchema);
+const MessageModel = mongoose.model<IMessage>('Message', MessageSchema);
+
 export class DatabaseService {
-    private db: InstanceType<typeof Database>;
-
-    constructor(dbPath: string = 'chat_history.db') {
-        this.db = new Database(dbPath, (err: Error | null) => {
-            if (err) {
-                console.error('Could not connect to database', err);
-            } else {
-                console.log('Connected to SQLite database');
-                this.init();
-            }
-        });
+    constructor() {
+        this.connect();
     }
 
-    private run(sql: string, params: any[] = []): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.db.run(sql, params, function (err: Error | null) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        });
-    }
+    private async connect(): Promise<void> {
+        if (mongoose.connection.readyState === 1) {
+            console.log('Already connected to MongoDB');
+            return;
+        }
 
-    private get<T>(sql: string, params: any[] = []): Promise<T | undefined> {
-        return new Promise((resolve, reject) => {
-            this.db.get(sql, params, (err: Error | null, row: T) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(row);
-                }
-            });
-        });
-    }
+        const mongoUri = process.env.MONGODB_URI;
+        if (!mongoUri) {
+            console.error('MONGODB_URI is not defined in environment variables.');
+            return;
+        }
 
-    private all<T>(sql: string, params: any[] = []): Promise<T[]> {
-        return new Promise((resolve, reject) => {
-            this.db.all(sql, params, (err: Error | null, rows: T[]) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(rows);
-                }
-            });
-        });
-    }
-
-    private async init(): Promise<void> {
-        // Create messages table
-        await this.run(`
-            CREATE TABLE IF NOT EXISTS messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id TEXT NOT NULL,
-                role TEXT NOT NULL,
-                content TEXT NOT NULL,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Create users table
-        await this.run(`
-            CREATE TABLE IF NOT EXISTS users (
-                user_id TEXT PRIMARY KEY,
-                ai_enabled INTEGER DEFAULT 1,
-                can_toggle_ai INTEGER DEFAULT 0
-            )
-        `);
+        try {
+            await mongoose.connect(mongoUri);
+            console.log('Connected to MongoDB');
+        } catch (error) {
+            console.error('Error connecting to MongoDB:', error);
+        }
     }
 
     // --- User Management Methods ---
 
     public async addUser(userId: string, canToggle: boolean): Promise<void> {
-        await this.run(`
-            INSERT OR REPLACE INTO users (user_id, can_toggle_ai, ai_enabled) VALUES (?, ?, 1)
-        `, [userId, canToggle ? 1 : 0]);
+        await UserModel.findOneAndUpdate(
+            { userId: userId },
+            { userId: userId, can_toggle_ai: canToggle, ai_enabled: true },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
     }
 
     public async removeUser(userId: string): Promise<void> {
-        await this.run('DELETE FROM users WHERE user_id = ?', [userId]);
+        await UserModel.deleteOne({ userId: userId });
     }
 
     public async isAiEnabled(userId: string): Promise<boolean> {
-        const user = await this.get<{ ai_enabled: number }>('SELECT ai_enabled FROM users WHERE user_id = ?', [userId]);
-        return user ? user.ai_enabled === 1 : false;
+        const user = await UserModel.findOne({ userId: userId });
+        return user ? user.ai_enabled : false;
     }
 
     public async canUserToggleAi(userId: string): Promise<boolean> {
-        const user = await this.get<{ can_toggle_ai: number }>('SELECT can_toggle_ai FROM users WHERE user_id = ?', [userId]);
-        return user ? user.can_toggle_ai === 1 : false;
+        const user = await UserModel.findOne({ userId: userId });
+        return user ? user.can_toggle_ai : false;
     }
 
     public async setUserAiStatus(userId: string, isEnabled: boolean): Promise<void> {
-        await this.run('UPDATE users SET ai_enabled = ? WHERE user_id = ?', [isEnabled ? 1 : 0, userId]);
+        await UserModel.updateOne({ userId: userId }, { ai_enabled: isEnabled });
     }
 
     public async userExists(userId: string): Promise<boolean> {
-        const row = await this.get<{ 1: number }>('SELECT 1 FROM users WHERE user_id = ?', [userId]);
-        return !!row;
+        const user = await UserModel.findOne({ userId: userId });
+        return !!user;
     }
 
     // --- Chat History Methods ---
 
     public async addMessage(userId: string, role: 'user' | 'model', content: string): Promise<void> {
-        await this.run(`
-            INSERT INTO messages (user_id, role, content) VALUES (?, ?, ?)
-        `, [userId, role, content]);
+        await MessageModel.create({ userId, role, content });
         await this.trimHistory(userId);
     }
 
     public async getHistory(userId: string, limit: number = 10): Promise<ChatMessage[]> {
-        const rows = await this.all<{ role: 'user' | 'model'; content: string }>(`
-            SELECT role, content FROM messages
-            WHERE user_id = ?
-            ORDER BY timestamp DESC
-            LIMIT ?
-        `, [userId, limit]);
-        
-        return rows.reverse().map(row => ({
-            role: row.role,
-            parts: [{ text: row.content }]
+        const messages = await MessageModel.find({ userId: userId })
+            .sort({ timestamp: -1 })
+            .limit(limit)
+            .lean(); // Use .lean() for plain JavaScript objects
+
+        return messages.reverse().map(msg => ({
+            role: msg.role,
+            parts: [{ text: msg.content }]
         }));
     }
 
     private async trimHistory(userId: string, keep: number = 10): Promise<void> {
-        await this.run(`
-            DELETE FROM messages
-            WHERE user_id = ? AND id NOT IN (
-                SELECT id FROM messages
-                WHERE user_id = ?
-                ORDER BY timestamp DESC
-                LIMIT ?
-            )
-        `, [userId, userId, keep]);
+        const messageCount = await MessageModel.countDocuments({ userId: userId });
+        if (messageCount > keep) {
+            const messagesToDelete = await MessageModel.find({ userId: userId })
+                .sort({ timestamp: 1 })
+                .limit(messageCount - keep);
+            
+            const idsToDelete = messagesToDelete.map(msg => msg._id);
+            await MessageModel.deleteMany({ _id: { $in: idsToDelete } });
+        }
     }
 
-    public close(): void {
-        this.db.close();
+    public async close(): Promise<void> {
+        await mongoose.disconnect();
+        console.log('Disconnected from MongoDB');
     }
 }
