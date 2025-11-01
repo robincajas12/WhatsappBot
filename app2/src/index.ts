@@ -9,7 +9,7 @@ import FromMeHandler from './handlers/meHandlers/FromMeHandler.js';
 import MentionedMeHandler from './handlers/otherPeopleHandlers/MentionedMeHandler.js';
 import { AIResponseHandler } from './handlers/otherPeopleHandlers/AIResponseHandler.js';
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ path: "../.env" });
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info');
