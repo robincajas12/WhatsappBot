@@ -4,6 +4,7 @@ import { PingHandler } from './handlers/meHandlers/PingHandler';
 import { HelpHandler } from './handlers/meHandlers/HelpHandler';
 import { HelloHandler } from './handlers/meHandlers/HelloHandler';
 import { StickerHandler } from './handlers/meHandlers/StickerHandler';
+import { PdfHandler } from './handlers/meHandlers/PdfHandler';
 import { ProxyHandler } from './handlers/ProxyHandler';
 import FromMeHandler from './handlers/meHandlers/FromMeHandler';
 import MentionedMeHandler from './handlers/otherPeopleHandlers/MentionedMeHandler';
@@ -35,7 +36,7 @@ client.on('ready', () => {
 
 const fromMeHandler = new FromMeHandler();
 const messageChain = new PingHandler();
-messageChain.setNext(new HelpHandler()).setNext(new HelloHandler()).setNext(new StickerHandler());
+messageChain.setNext(new HelpHandler()).setNext(new HelloHandler()).setNext(new StickerHandler()).setNext(new PdfHandler());
 fromMeHandler.setNext(messageChain)
 
 // Group handlers

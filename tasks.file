@@ -4,3 +4,6 @@
 - Add unit tests for all handlers.
 - Implement a `SummarizeHandler` for long messages.
 - Create a `TranslateHandler` to translate messages.
+- Add support for custom fonts and styling in the `PdfHandler`.
+- Allow the `PdfHandler` to convert images to PDF.
+- Implement password protection for generated PDFs.
