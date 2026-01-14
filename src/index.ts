@@ -2,6 +2,9 @@ import { Client, LocalAuth, Message } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
 import { PingHandler } from './handlers/meHandlers/PingHandler';
 import { HelpHandler } from './handlers/meHandlers/HelpHandler';
+import { HelloHandler } from './handlers/meHandlers/HelloHandler';
+import { StickerHandler } from './handlers/meHandlers/StickerHandler';
+import { PdfHandler } from './handlers/meHandlers/PdfHandler';
 import { ProxyHandler } from './handlers/ProxyHandler';
 import FromMeHandler from './handlers/meHandlers/FromMeHandler';
 import MentionedMeHandler from './handlers/otherPeopleHandlers/MentionedMeHandler';
@@ -33,7 +36,7 @@ client.on('ready', () => {
 
 const fromMeHandler = new FromMeHandler();
 const messageChain = new PingHandler();
-messageChain.setNext(new HelpHandler());
+messageChain.setNext(new HelpHandler()).setNext(new HelloHandler()).setNext(new StickerHandler()).setNext(new PdfHandler());
 fromMeHandler.setNext(messageChain)
 
 // Group handlers
@@ -41,7 +44,7 @@ const mentionedMeHandler = new MentionedMeHandler();
 mentionedMeHandler.setNext(new HelpHandler());
 
 // Other people handlers
-const otherPeopleChain = new AIResponseHandler();
+const otherPeopleChain = new AIResponseHandler(process.env.API_KEY as string);
 const otherPeoplePingHandler = new PingHandler();
 otherPeoplePingHandler.setNext(new HelpHandler());
 otherPeopleChain.setNext(otherPeoplePingHandler);
