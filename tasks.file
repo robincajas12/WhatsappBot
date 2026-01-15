@@ -1,4 +1,3 @@
-- Implement a `WeatherHandler` to get the weather for a given location.
 - Add a `TodoHandler` to manage a to-do list.
 - Create a `NewsHandler` to fetch the latest news headlines.
 - Add unit tests for all handlers.
@@ -7,3 +6,6 @@
 - Add support for custom fonts and styling in the `PdfHandler`.
 - Allow the `PdfHandler` to convert images to PDF.
 - Implement password protection for generated PDFs.
+- Create a `JokeHandler` that tells a random joke.
+- Implement a `MovieHandler` to get information about a movie.
+- Add a `CryptoHandler` to get the price of a cryptocurrency.
