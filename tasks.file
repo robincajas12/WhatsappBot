@@ -1,4 +1,3 @@
-- Add a `TodoHandler` to manage a to-do list.
 - Create a `NewsHandler` to fetch the latest news headlines.
 - Add unit tests for all handlers.
 - Implement a `SummarizeHandler` for long messages.
@@ -9,3 +8,8 @@
 - Create a `JokeHandler` that tells a random joke.
 - Implement a `MovieHandler` to get information about a movie.
 - Add a `CryptoHandler` to get the price of a cryptocurrency.
+- Add a `SpotifyHandler` to get information about a song.
+- Add a `ReminderHandler` to set reminders.
+- Add a `GoogleSearchHandler` to perform Google searches.
+- Add a `PollHandler` to create polls in groups.
+- Add a `ImgToAsciiHandler` to convert an image to ASCII art.
