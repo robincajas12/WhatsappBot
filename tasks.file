@@ -8,8 +8,7 @@
 - Create a `JokeHandler` that tells a random joke.
 - Implement a `MovieHandler` to get information about a movie.
 - Add a `CryptoHandler` to get the price of a cryptocurrency.
-- Add a `SpotifyHandler` to get information about a song.
-- Add a `ReminderHandler` to set reminders.
-- Add a `GoogleSearchHandler` to perform Google searches.
-- Add a `PollHandler` to create polls in groups.
-- Add a `ImgToAsciiHandler` to convert an image to ASCII art.
+- Implement a `ReminderHandler` to set reminders.
+- Create a `PollHandler` to create polls in groups.
+- Add a `SpotifyHandler` to get song information.
+- Develop a `GameHandler` for simple text-based games.
