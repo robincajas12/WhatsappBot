@@ -8,6 +8,7 @@ import { PdfHandler } from './handlers/meHandlers/PdfHandler';
 import { WeatherHandler } from './handlers/meHandlers/WeatherHandler';
 import { TodoHandler } from './handlers/meHandlers/TodoHandler';
 import { NewsHandler } from './handlers/meHandlers/NewsHandler';
+import { JokeHandler } from './handlers/meHandlers/JokeHandler';
 import { ProxyHandler } from './handlers/ProxyHandler';
 import FromMeHandler from './handlers/meHandlers/FromMeHandler';
 import MentionedMeHandler from './handlers/otherPeopleHandlers/MentionedMeHandler';
@@ -39,7 +40,7 @@ client.on('ready', () => {
 
 const fromMeHandler = new FromMeHandler();
 const messageChain = new PingHandler();
-messageChain.setNext(new HelpHandler()).setNext(new HelloHandler()).setNext(new StickerHandler()).setNext(new PdfHandler()).setNext(new WeatherHandler()).setNext(new TodoHandler()).setNext(new NewsHandler());
+messageChain.setNext(new HelpHandler()).setNext(new HelloHandler()).setNext(new StickerHandler()).setNext(new PdfHandler()).setNext(new WeatherHandler()).setNext(new TodoHandler()).setNext(new NewsHandler()).setNext(new JokeHandler());
 fromMeHandler.setNext(messageChain)
 
 // Group handlers
