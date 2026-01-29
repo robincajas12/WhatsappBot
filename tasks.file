@@ -4,7 +4,6 @@
 - Add support for custom fonts and styling in the `PdfHandler`.
 - Allow the `PdfHandler` to convert images to PDF.
 - Implement password protection for generated PDFs.
-- Implement a `MovieHandler` to get information about a movie.
 - Add a `CryptoHandler` to get the price of a cryptocurrency.
 - Implement a `ReminderHandler` to set reminders.
 - Create a `PollHandler` to create polls in groups.
@@ -15,3 +14,8 @@
 - Add a `GiphyHandler` to search for and send GIFs.
 - Implement a `WikipediaHandler` to search for and summarize articles.
 - Create a `GithubHandler` to get information about a github repository.
+- Implement a `StockHandler` to get stock price information for a given symbol.
+- Create a `YoutubeHandler` to search for YouTube videos.
+- Add a `RecipeHandler` to find recipes for a given dish.
+- Implement a `MapsHandler` to get a link to a location on Google Maps.
+- Create a `QrCodeHandler` to generate a QR code from text.
