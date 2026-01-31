@@ -5,13 +5,18 @@
 - Allow the `PdfHandler` to convert images to PDF.
 - Implement password protection for generated PDFs.
 - Implement a `MovieHandler` to get information about a movie.
-- Add a `CryptoHandler` to get the price of a cryptocurrency.
 - Implement a `ReminderHandler` to set reminders.
 - Create a `PollHandler` to create polls in groups.
 - Add a `SpotifyHandler` to get song information.
 - Develop a `GameHandler` for simple text-based games.
-- Implement a `QuoteHandler` to get a random inspirational quote.
 - Create a `DictionaryHandler` to define words.
 - Add a `GiphyHandler` to search for and send GIFs.
 - Implement a `WikipediaHandler` to search for and summarize articles.
 - Create a `GithubHandler` to get information about a github repository.
+- Implement `CurrencyHandler` to convert between currencies using an exchange rate API.
+- Implement `UrbanDictionaryHandler` to fetch slang definitions.
+- Implement `CatHandler` to send random cat images using the TheCatAPI.
+- Implement `TriviaHandler` to provide multiple-choice trivia questions.
+- Implement `RecipeHandler` to search for cooking recipes.
+- Implement `HoroscopeHandler` to get daily horoscope readings.
+- Implement `QRCodeHandler` to generate QR codes from text.
