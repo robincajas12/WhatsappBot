@@ -17,12 +17,12 @@ export class AIResponseHandler extends AbstractMessageHandler {
     public async handle(message: Message, client: Client): Promise<void> {
         try {
             const result = await this.ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: "gemini-1.5-flash",
                 contents: [{ role: "user", parts: [{ text: message.body }] }],
-                systemInstruction: this.systemInstruction,
+                config: { systemInstruction: this.systemInstruction },
             });
 
-            const text = result.response.text()?.trim() || null;
+            const text = result.text?.trim() || null;
 
             if (text) {
                 await message.reply(text);
