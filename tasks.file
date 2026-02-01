@@ -1,17 +1,21 @@
 - Add unit tests for all handlers.
-- Implement a `SummarizeHandler` for long messages.
-- Create a `TranslateHandler` to translate messages.
 - Add support for custom fonts and styling in the `PdfHandler`.
 - Allow the `PdfHandler` to convert images to PDF.
 - Implement password protection for generated PDFs.
 - Implement a `MovieHandler` to get information about a movie.
-- Add a `CryptoHandler` to get the price of a cryptocurrency.
 - Implement a `ReminderHandler` to set reminders.
 - Create a `PollHandler` to create polls in groups.
 - Add a `SpotifyHandler` to get song information.
 - Develop a `GameHandler` for simple text-based games.
-- Implement a `QuoteHandler` to get a random inspirational quote.
 - Create a `DictionaryHandler` to define words.
 - Add a `GiphyHandler` to search for and send GIFs.
 - Implement a `WikipediaHandler` to search for and summarize articles.
 - Create a `GithubHandler` to get information about a github repository.
+- Implement `ImageGenerationHandler` to generate images from text descriptions.
+- Create a `CurrencyConverterHandler` for real-time exchange rates.
+- Implement `VoiceToTextHandler` to transcribe WhatsApp voice notes.
+- Add `UrlShortenerHandler` to shorten long URLs.
+- Create `YouTubeSummaryHandler` to summarize YouTube videos from their URLs.
+- Implement `StockMarketHandler` to get real-time stock prices.
+- Add `MathSolverHandler` to solve mathematical equations from text or images.
+- Create a `ReceiptScannerHandler` to extract information from images of receipts and save to a spreadsheet.
