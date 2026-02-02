@@ -1,17 +1,20 @@
 - Add unit tests for all handlers.
-- Implement a `SummarizeHandler` for long messages.
-- Create a `TranslateHandler` to translate messages.
+- Implement a `SummarizeHandler` for long messages using AI.
+- Create a `TranslateHandler` to translate messages between languages.
 - Add support for custom fonts and styling in the `PdfHandler`.
 - Allow the `PdfHandler` to convert images to PDF.
 - Implement password protection for generated PDFs.
-- Implement a `MovieHandler` to get information about a movie.
-- Add a `CryptoHandler` to get the price of a cryptocurrency.
-- Implement a `ReminderHandler` to set reminders.
+- Implement a `MovieHandler` to get information about a movie (using TMDB API).
+- Implement a `ReminderHandler` to set reminders with automated alerts.
 - Create a `PollHandler` to create polls in groups.
-- Add a `SpotifyHandler` to get song information.
-- Develop a `GameHandler` for simple text-based games.
-- Implement a `QuoteHandler` to get a random inspirational quote.
-- Create a `DictionaryHandler` to define words.
+- Add a `SpotifyHandler` to get song information and links.
+- Develop a `GameHandler` for simple text-based games (like Trivia or Hangman).
 - Add a `GiphyHandler` to search for and send GIFs.
 - Implement a `WikipediaHandler` to search for and summarize articles.
 - Create a `GithubHandler` to get information about a github repository.
+- Implement a `CurrencyHandler` to convert between different fiat currencies.
+- Create a `RecipeHandler` to search for cooking recipes by ingredients.
+- Add a `UnitConverterHandler` to convert between metric and imperial units.
+- Implement a `StockHandler` to get real-time stock market data.
+- Create an `ImageGenerationHandler` using AI to generate images from text descriptions.
+- Implement a `YoutubeHandler` to search for videos and provide links or metadata.
