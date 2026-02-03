@@ -9,6 +9,11 @@ import { WeatherHandler } from './handlers/meHandlers/WeatherHandler';
 import { TodoHandler } from './handlers/meHandlers/TodoHandler';
 import { NewsHandler } from './handlers/meHandlers/NewsHandler';
 import { JokeHandler } from './handlers/meHandlers/JokeHandler';
+import { QuoteHandler } from './handlers/meHandlers/QuoteHandler';
+import { CryptoHandler } from './handlers/meHandlers/CryptoHandler';
+import { DictionaryHandler } from './handlers/meHandlers/DictionaryHandler';
+import { WikipediaHandler } from './handlers/meHandlers/WikipediaHandler';
+import { TranslateHandler } from './handlers/meHandlers/TranslateHandler';
 import { ProxyHandler } from './handlers/ProxyHandler';
 import FromMeHandler from './handlers/meHandlers/FromMeHandler';
 import MentionedMeHandler from './handlers/otherPeopleHandlers/MentionedMeHandler';
@@ -40,7 +45,19 @@ client.on('ready', () => {
 
 const fromMeHandler = new FromMeHandler();
 const messageChain = new PingHandler();
-messageChain.setNext(new HelpHandler()).setNext(new HelloHandler()).setNext(new StickerHandler()).setNext(new PdfHandler()).setNext(new WeatherHandler()).setNext(new TodoHandler()).setNext(new NewsHandler()).setNext(new JokeHandler());
+messageChain.setNext(new HelpHandler())
+    .setNext(new HelloHandler())
+    .setNext(new StickerHandler())
+    .setNext(new PdfHandler())
+    .setNext(new WeatherHandler())
+    .setNext(new TodoHandler())
+    .setNext(new NewsHandler())
+    .setNext(new JokeHandler())
+    .setNext(new QuoteHandler())
+    .setNext(new CryptoHandler())
+    .setNext(new DictionaryHandler())
+    .setNext(new WikipediaHandler())
+    .setNext(new TranslateHandler(process.env.API_KEY as string));
 fromMeHandler.setNext(messageChain)
 
 // Group handlers
