@@ -1,17 +1,17 @@
 - Add unit tests for all handlers.
 - Implement a `SummarizeHandler` for long messages.
-- Create a `TranslateHandler` to translate messages.
 - Add support for custom fonts and styling in the `PdfHandler`.
 - Allow the `PdfHandler` to convert images to PDF.
 - Implement password protection for generated PDFs.
 - Implement a `MovieHandler` to get information about a movie.
-- Add a `CryptoHandler` to get the price of a cryptocurrency.
 - Implement a `ReminderHandler` to set reminders.
 - Create a `PollHandler` to create polls in groups.
 - Add a `SpotifyHandler` to get song information.
 - Develop a `GameHandler` for simple text-based games.
-- Implement a `QuoteHandler` to get a random inspirational quote.
-- Create a `DictionaryHandler` to define words.
 - Add a `GiphyHandler` to search for and send GIFs.
-- Implement a `WikipediaHandler` to search for and summarize articles.
 - Create a `GithubHandler` to get information about a github repository.
+- Implement a `StockHandler` to get stock prices.
+- Create a `UnitConverterHandler` to convert units.
+- Implement a `RecipeHandler` to search for recipes.
+- Add a `YouTubeHandler` to search for YouTube videos.
+- Implement an `AirQualityHandler` to check air quality.
