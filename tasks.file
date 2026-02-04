@@ -1,17 +1,23 @@
 - Add unit tests for all handlers.
-- Implement a `SummarizeHandler` for long messages.
-- Create a `TranslateHandler` to translate messages.
+- Implement a `SummarizeHandler` for long messages using AI.
 - Add support for custom fonts and styling in the `PdfHandler`.
 - Allow the `PdfHandler` to convert images to PDF.
 - Implement password protection for generated PDFs.
-- Implement a `MovieHandler` to get information about a movie.
-- Add a `CryptoHandler` to get the price of a cryptocurrency.
-- Implement a `ReminderHandler` to set reminders.
+- Implement a `MovieHandler` to get information about a movie using TMDB API.
+- Add a `CryptoHandler` to get the price of a cryptocurrency using CoinGecko API.
+- Implement a `ReminderHandler` to set reminders with `!remind <time> <message>`.
 - Create a `PollHandler` to create polls in groups.
-- Add a `SpotifyHandler` to get song information.
-- Develop a `GameHandler` for simple text-based games.
-- Implement a `QuoteHandler` to get a random inspirational quote.
+- Add a `SpotifyHandler` to get song information and links.
+- Develop a `GameHandler` for simple text-based games (like Trivia or Hangman).
 - Create a `DictionaryHandler` to define words.
 - Add a `GiphyHandler` to search for and send GIFs.
-- Implement a `WikipediaHandler` to search for and summarize articles.
 - Create a `GithubHandler` to get information about a github repository.
+- !shorten <url>: Implement a `ShortenUrlHandler` using a URL shortener API.
+- !currency <amount> <from> <to>: Implement a `CurrencyHandler` for exchange rates.
+- !calc <expression>: Implement a `CalcHandler` for mathematical expressions.
+- !image <prompt>: Implement an `ImageGenHandler` to generate images using an AI model.
+- !lyrics <song>: Implement a `LyricsHandler` to fetch song lyrics.
+- !youtube <query>: Implement a `YouTubeHandler` to search for videos.
+- !stock <symbol>: Implement a `StockHandler` to get stock market data.
+- !recipe <ingredient>: Implement a `RecipeHandler` to find recipes.
+- !qrcode <text>: Implement a `QrCodeHandler` to generate QR codes.
