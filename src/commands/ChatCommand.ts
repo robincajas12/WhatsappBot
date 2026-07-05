@@ -2,7 +2,7 @@ import { WAMessage, downloadContentFromMessage } from '@whiskeysockets/baileys';
 import makeWASocket from '@whiskeysockets/baileys';
 import { Command } from './Command.js';
 import { DatabaseService } from '../database.js';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type, FunctionDeclaration, ToolListUnion } from '@google/genai';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -68,7 +68,7 @@ Cuando el usuario te pida ver, enviar, guardar o eliminar cosas, utiliza las her
 Responde de forma amigable, directa y natural. Si envías un archivo usando la herramienta 'enviarArchivo', confirma al usuario en tu respuesta final que el archivo se ha enviado con éxito.`;
 
         // Define tools / function declarations
-        const tools = [
+        const tools: ToolListUnion = [
             {
                 functionDeclarations: [
                     {
@@ -79,15 +79,15 @@ Responde de forma amigable, directa y natural. Si envías un archivo usando la h
                         name: 'enviarArchivo',
                         description: 'Envía un archivo del servidor directamente al usuario por chat de WhatsApp.',
                         parameters: {
-                            type: 'OBJECT',
+                            type: Type.OBJECT,
                             properties: {
                                 nombreArchivo: {
-                                    type: 'STRING',
+                                    type: Type.STRING,
                                     description: 'El nombre del archivo tal como está guardado en el servidor.'
-                                }
+                                } as any
                             },
                             required: ['nombreArchivo']
-                        }
+                        } as any
                     },
                     {
                         name: 'listarEnlaces',
@@ -97,33 +97,33 @@ Responde de forma amigable, directa y natural. Si envías un archivo usando la h
                         name: 'guardarEnlace',
                         description: 'Guarda o actualiza un enlace rápido.',
                         parameters: {
-                            type: 'OBJECT',
+                            type: Type.OBJECT,
                             properties: {
                                 nombre: {
-                                    type: 'STRING',
+                                    type: Type.STRING,
                                     description: 'El nombre corto para el enlace.'
-                                },
+                                } as any,
                                 url: {
-                                    type: 'STRING',
+                                    type: Type.STRING,
                                     description: 'La dirección URL completa (debe empezar con http o https).'
-                                }
+                                } as any
                             },
                             required: ['nombre', 'url']
-                        }
+                        } as any
                     },
                     {
                         name: 'eliminarEnlace',
                         description: 'Elimina un enlace rápido por su nombre.',
                         parameters: {
-                            type: 'OBJECT',
+                            type: Type.OBJECT,
                             properties: {
                                 nombre: {
-                                    type: 'STRING',
+                                    type: Type.STRING,
                                     description: 'El nombre del enlace a eliminar.'
-                                }
+                                } as any
                             },
                             required: ['nombre']
-                        }
+                        } as any
                     },
                     {
                         name: 'listarGuardados',
@@ -133,49 +133,49 @@ Responde de forma amigable, directa y natural. Si envías un archivo usando la h
                         name: 'buscarGuardadosPorCategoria',
                         description: 'Filtra elementos guardados por una categoría o key específica.',
                         parameters: {
-                            type: 'OBJECT',
+                            type: Type.OBJECT,
                             properties: {
                                 categoria: {
-                                    type: 'STRING',
+                                    type: Type.STRING,
                                     description: 'La categoría o key de búsqueda.'
-                                }
+                                } as any
                             },
                             required: ['categoria']
-                        }
+                        } as any
                     },
                     {
                         name: 'guardarTexto',
                         description: 'Guarda un texto rápido en la base de datos.',
                         parameters: {
-                            type: 'OBJECT',
+                            type: Type.OBJECT,
                             properties: {
                                 texto: {
-                                    type: 'STRING',
+                                    type: Type.STRING,
                                     description: 'El texto o recordatorio a guardar.'
-                                },
+                                } as any,
                                 categoria: {
-                                    type: 'STRING',
+                                    type: Type.STRING,
                                     description: 'Opcional. Una categoría para agruparlo.'
-                                }
+                                } as any
                             },
                             required: ['texto']
-                        }
+                        } as any
                     },
                     {
                         name: 'eliminarGuardadoPorId',
                         description: 'Elimina una entrada guardada en la base de datos usando su ID único de 7 caracteres.',
                         parameters: {
-                            type: 'OBJECT',
+                            type: Type.OBJECT,
                             properties: {
                                 id: {
-                                    type: 'STRING',
+                                    type: Type.STRING,
                                     description: 'El ID de 7 caracteres del elemento guardado.'
-                                }
+                                } as any
                             },
                             required: ['id']
-                        }
+                        } as any
                     }
-                ]
+                ] as FunctionDeclaration[]
             }
         ];
 
@@ -285,7 +285,12 @@ Responde de forma amigable, directa y natural. Si envías un archivo usando la h
                 }
 
                 // Add call and tool response to the conversation history
-                chatMessages.push(response.candidates[0].content as any);
+                const candidateContent = response.candidates?.[0]?.content;
+                if (candidateContent) {
+                    chatMessages.push(candidateContent as any);
+                } else if (response.text) {
+                    chatMessages.push({ role: 'assistant', parts: [{ text: response.text }] } as any);
+                }
                 chatMessages.push({
                     role: 'user',
                     parts: toolResponseParts as any
