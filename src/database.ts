@@ -60,6 +60,8 @@ interface DatabaseSchema {
     config?: DBConfig;
     savedMessages?: ISavedMessage[];
     links?: ILink[];
+    activeSessions?: { userId: string; sessionId: string }[];
+    julesSessions?: { ownerUserId: string; sessionId: string; shortId: string; createdAt: string }[];
 }
 
 export class DatabaseService {
@@ -375,6 +377,74 @@ export class DatabaseService {
         await this.ensureInitialized();
         this.ensureLinksInitialized();
         return this.db.data.links!;
+    }
+
+    // --- Active Jules Sessions per user ---
+    private ensureActiveSessionsInitialized(): void {
+        if (!this.db.data.activeSessions) {
+            this.db.data.activeSessions = [];
+        }
+    }
+
+    public async setActiveSession(userId: string, sessionId: string): Promise<void> {
+        await this.ensureInitialized();
+        this.ensureActiveSessionsInitialized();
+        const idx = this.db.data.activeSessions!.findIndex(s => s.userId === userId);
+        if (idx > -1) {
+            this.db.data.activeSessions![idx].sessionId = sessionId;
+        } else {
+            this.db.data.activeSessions!.push({ userId, sessionId });
+        }
+        await this.db.write();
+    }
+
+    public async getActiveSession(userId: string): Promise<string | undefined> {
+        await this.ensureInitialized();
+        this.ensureActiveSessionsInitialized();
+        const rec = this.db.data.activeSessions!.find(s => s.userId === userId);
+        return rec ? rec.sessionId : undefined;
+    }
+
+    public async clearActiveSession(userId: string): Promise<void> {
+        await this.ensureInitialized();
+        this.ensureActiveSessionsInitialized();
+        this.db.data.activeSessions = this.db.data.activeSessions!.filter(s => s.userId !== userId);
+        await this.db.write();
+    }
+
+    // --- Jules session short-id registry ---
+    private ensureJulesSessionsInitialized(): void {
+        if (!this.db.data.julesSessions) {
+            this.db.data.julesSessions = [];
+        }
+    }
+
+    public async addJulesSession(ownerUserId: string, sessionId: string, shortId: string): Promise<void> {
+        await this.ensureInitialized();
+        this.ensureJulesSessionsInitialized();
+        this.db.data.julesSessions!.push({ ownerUserId, sessionId, shortId, createdAt: new Date().toISOString() });
+        await this.db.write();
+    }
+
+    public async getJulesSessionByShortId(shortId: string): Promise<{ ownerUserId: string; sessionId: string; shortId: string; createdAt: string } | undefined> {
+        await this.ensureInitialized();
+        this.ensureJulesSessionsInitialized();
+        return this.db.data.julesSessions!.find(s => s.shortId === shortId);
+    }
+
+    public async shortIdExists(shortId: string): Promise<boolean> {
+        await this.ensureInitialized();
+        this.ensureJulesSessionsInitialized();
+        return this.db.data.julesSessions!.some(s => s.shortId === shortId);
+    }
+
+    public async removeJulesSessionByShortId(shortId: string): Promise<boolean> {
+        await this.ensureInitialized();
+        this.ensureJulesSessionsInitialized();
+        const original = this.db.data.julesSessions!.length;
+        this.db.data.julesSessions = this.db.data.julesSessions!.filter(s => s.shortId !== shortId);
+        await this.db.write();
+        return this.db.data.julesSessions!.length < original;
     }
 
     public async deleteLink(name: string): Promise<boolean> {

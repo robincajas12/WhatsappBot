@@ -1,0 +1,25 @@
+{
+  "resource": {
+    "name": "sessions/17114676903858489598",
+    "sourceContext": {
+      "source": "sources/github/robincajas12/jarvis",
+      "githubRepoContext": {
+        "startingBranch": "setup-personal-assistant-memory-17556449545708746304"
+      }
+    },
+    "prompt": "puedes buscar en Google cosas ?",
+    "url": "https://jules.google.com/session/17114676903858489598",
+    "requirePlanApproval": true,
+    "id": "17114676903858489598",
+    "automationMode": "AUTO_CREATE_PR",
+    "archived": false,
+    "state": "unspecified",
+    "outputs": [],
+    "outcome": {
+      "sessionId": "17114676903858489598",
+      "state": "completed",
+      "outputs": []
+    }
+  },
+  "_lastSyncedAt": 1783289014822
+}

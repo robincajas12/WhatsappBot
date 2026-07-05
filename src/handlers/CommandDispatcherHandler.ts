@@ -18,6 +18,13 @@ import { SavedCommand } from '../commands/SavedCommand.js';
 import { EnlaceCommand } from '../commands/EnlaceCommand.js';
 import { ArchivoCommand } from '../commands/ArchivoCommand.js';
 import { ChatCommand } from '../commands/ChatCommand.js';
+import { WorkCommand } from '../commands/WorkCommand.js';
+import { DatabaseService } from '../database.js';
+import { jules as julesClient } from '@google/jules-sdk';
+import { AskCommand } from '../commands/AskCommand.js';
+import { JarvisSessionStartCommand } from '../commands/JarvisSessionStartCommand.js';
+import { JarvisSessionEndCommand } from '../commands/JarvisSessionEndCommand.js';
+import { sendBotMessage, BOT_MSG_PREFIX } from '../utils/botMessage.js';
 
 const OWNER_JID = process.env.OWNER_JID;
 
@@ -47,6 +54,10 @@ export class CommandDispatcherHandler extends AbstractMessageHandler {
         this.commandMap.set('!enlace', new EnlaceCommand());
         this.commandMap.set('!archivo', new ArchivoCommand());
         this.commandMap.set('!chat', new ChatCommand());
+        this.commandMap.set('!jarvis', new WorkCommand());
+        this.commandMap.set('!jarvis-session-start', new JarvisSessionStartCommand());
+        this.commandMap.set('!jarvis-session-end', new JarvisSessionEndCommand());
+        this.commandMap.set('!ask', new AskCommand());
     }
 
     public async handle(message: WAMessage, sock: ReturnType<typeof makeWASocket>): Promise<void> {
@@ -74,7 +85,10 @@ export class CommandDispatcherHandler extends AbstractMessageHandler {
                 command instanceof SavedCommand ||
                 command instanceof EnlaceCommand ||
                 command instanceof ArchivoCommand ||
-                command instanceof ChatCommand
+                command instanceof ChatCommand ||
+                command instanceof WorkCommand ||
+                command instanceof JarvisSessionStartCommand ||
+                command instanceof JarvisSessionEndCommand
             ) {
                 if (!OWNER_JID || (message.key.fromMe === false && sender !== OWNER_JID) ) {
                     console.log(`Non-owner ${sender} tried to use admin command: ${commandKey}`);
@@ -89,7 +103,44 @@ export class CommandDispatcherHandler extends AbstractMessageHandler {
             return; // Command found and executed, stop the chain.
         }
 
-        // If no command was found, pass to the next handler in the chain.
+        // If no command was found, check for bot-prefixed messages and forward to active Jules session when appropriate.
+        try {
+            const body = messageBody || '';
+            // Avoid processing messages that the bot itself sent (they are prefixed)
+            if (body.startsWith(BOT_MSG_PREFIX)) {
+                await super.handle(message, sock);
+                return;
+            }
+
+            const senderJid = sender;
+            if (senderJid) {
+                const db = DatabaseService.getInstance();
+                const activeSessionId = await db.getActiveSession(senderJid);
+                if (activeSessionId && body) {
+                    const apiKey = process.env.JULES_API_KEY;
+                    const client = apiKey ? julesClient.with({ apiKey }) : julesClient;
+                    try {
+                        const session = (client as any).session?.(activeSessionId) || (client as any).session(activeSessionId);
+                        if (session) {
+                            await sendBotMessage(sock, senderJid, '⏳ Enviando mensaje a la sesión activa...');
+                            const reply = await session.ask(body);
+                            const msg = reply?.message || reply?.text || JSON.stringify(reply);
+                            await sendBotMessage(sock, senderJid, `💬 Respuesta de la sesión ${activeSessionId}:\n\n${msg}`);
+                            return;
+                        } else {
+                            await sendBotMessage(sock, senderJid, '❌ Sesión activa no encontrada en Jules.');
+                        }
+                    } catch (e) {
+                        console.error('Error forwarding to Jules session:', e);
+                        await sendBotMessage(sock, senderJid, '❌ Error al comunicarse con la sesión Jules.');
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Error checking active session:', e);
+        }
+
+        // If nothing to forward, pass to the next handler in the chain.
         await super.handle(message, sock);
     }
 }

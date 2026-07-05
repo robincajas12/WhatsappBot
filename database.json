@@ -1,5 +1,29 @@
 {
   "users": [],
   "messages": [],
-  "reminders": []
+  "reminders": [],
+  "config": {
+    "sleepStartHour": 23,
+    "sleepEndHour": 6
+  },
+  "activeSessions": [
+    {
+      "userId": "193359478059020@lid",
+      "sessionId": "7541099070004608996"
+    }
+  ],
+  "julesSessions": [
+    {
+      "ownerUserId": "193359478059020@lid",
+      "sessionId": "17114676903858489598",
+      "shortId": "3937",
+      "createdAt": "2026-07-05T22:03:34.832Z"
+    },
+    {
+      "ownerUserId": "193359478059020@lid",
+      "sessionId": "7541099070004608996",
+      "shortId": "0294",
+      "createdAt": "2026-07-05T22:19:23.870Z"
+    }
+  ]
 }
