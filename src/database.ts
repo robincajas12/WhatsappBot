@@ -286,7 +286,7 @@ export class DatabaseService {
         this.ensureSavedMessagesInitialized();
         const cleanSearch = phoneOrJid.replace(/\D/g, '');
         return this.db.data.savedMessages!.filter(m => {
-            const cleanJid = m.senderJid.split('@')[0];
+            const cleanJid = m.senderJid.split('@')[0].split(':')[0];
             return cleanJid === cleanSearch || m.senderJid === phoneOrJid;
         });
     }
@@ -297,7 +297,7 @@ export class DatabaseService {
         const cleanSearch = phoneOrJid.replace(/\D/g, '');
         const originalCount = this.db.data.savedMessages!.length;
         this.db.data.savedMessages = this.db.data.savedMessages!.filter(m => {
-            const cleanJid = m.senderJid.split('@')[0];
+            const cleanJid = m.senderJid.split('@')[0].split(':')[0];
             return cleanJid !== cleanSearch && m.senderJid !== phoneOrJid;
         });
         await this.db.write();

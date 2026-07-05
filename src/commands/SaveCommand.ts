@@ -64,8 +64,13 @@ export class SaveCommand implements Command {
             ['imageMessage', 'documentMessage', 'audioMessage', 'videoMessage', 'stickerMessage'].includes(key)
         );
 
-        if (mediaType) {
-            // Quoted message is a file/media
+        if (isFileExplicit) {
+            if (!mediaType) {
+                await sock.sendMessage(targetDest, { text: "⚠️ Especificaste `!save file` pero el mensaje citado no contiene ningún archivo." });
+                return;
+            }
+
+            // Quoted message is a file/media - Save it
             const mediaMessage = (quotedMessage as any)[mediaType];
             const mimeType = mediaMessage.mimetype || '';
             let fileName = mediaMessage.fileName || '';
@@ -126,9 +131,11 @@ export class SaveCommand implements Command {
             return;
         }
 
-        // Quoted message is NOT a media message
-        if (isFileExplicit) {
-            await sock.sendMessage(targetDest, { text: "⚠️ Especificaste `!save file` pero el mensaje citado no contiene ningún archivo." });
+        // isFileExplicit is false (meaning they ran !save)
+        if (mediaType) {
+            await sock.sendMessage(targetDest, { 
+                text: "⚠️ El mensaje citado contiene un archivo. Para guardarlo usa `!save file` o `!save file as <key>`." 
+            });
             return;
         }
 
