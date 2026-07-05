@@ -10,10 +10,7 @@ export class EnlaceCommand implements Command {
         const sender = message.key.remoteJid;
         if (!sender) return;
 
-        // Get target destination (usually the sender or own chat)
-        const myJid = sock.user?.id ? (sock.user.id.split(':')[0] + '@s.whatsapp.net') : (process.env.OWNER_JID || sender);
-        const isSelfChat = (sender === myJid);
-        const targetDest = isSelfChat ? sender : myJid;
+        const targetDest = sender;
 
         // Case 1: List all shortcuts when no arguments are provided
         if (args.length === 0) {

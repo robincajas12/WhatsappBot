@@ -11,10 +11,7 @@ export class SavedCommand implements Command {
         const sender = message.key.remoteJid;
         if (!sender) return;
 
-        // Ensure response goes to the owner's private chat
-        const myJid = sock.user?.id ? (sock.user.id.split(':')[0] + '@s.whatsapp.net') : (process.env.OWNER_JID || sender);
-        const isSelfChat = (sender === myJid);
-        const targetDest = isSelfChat ? sender : myJid;
+        const targetDest = sender;
 
         // 1. !saved without arguments -> List all saved messages/files with indices
         if (args.length === 0) {
