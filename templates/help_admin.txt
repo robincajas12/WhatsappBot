@@ -5,9 +5,9 @@
 • `!add <número>` / `!remove <número>`: Permite/bloquea la IA para un usuario.
 • `!recordar <tiempo> <mensaje>`: Guarda un recordatorio persistente (ej: `!recordar 3d comprar agua`).
 • `!config set sleep <inicio> <fin>`: Cambia las horas de descanso (ej: `!config set sleep 21 5`).
-• `!save` / `!save as <key>`: (Respondiendo a un mensaje) Guarda el mensaje citado.
-• `!saved` / `!saved <numero>` / `!saved key <key>`: Consulta mensajes guardados.
-• `!saved delete <numero>`: Borra mensajes guardados de ese contacto.
+• `!save` / `!save file` (con/sin `as <key>`): (Cita un mensaje/archivo) Lo descarga y guarda.
+• `!saved` / `!saved <ID/numero>` / `!saved key <key>`: Consulta o descarga elementos guardados.
+• `!saved delete <ID/numero/key>`: Borra elementos guardados (usa `delete id <ID>` para IDs).
 • `!enlace [<nombre> [<url>] / delete <nombre>]`: Guarda, consulta o elimina enlaces importantes.
 • `!archivo [<nombre_archivo>]`: Lista archivos del servidor o descarga uno.
 

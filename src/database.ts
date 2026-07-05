@@ -37,6 +37,10 @@ export interface ISavedMessage {
     senderJid: string;
     key?: string;
     timestamp: string; // ISO string
+    isFile?: boolean;
+    fileName?: string;
+    mimeType?: string;
+    localPath?: string;
 }
 
 interface DBConfig {
@@ -250,7 +254,15 @@ export class DatabaseService {
         }
     }
 
-    public async addSavedMessage(text: string, senderJid: string, key?: string): Promise<void> {
+    public async addSavedMessage(
+        text: string,
+        senderJid: string,
+        key?: string,
+        isFile?: boolean,
+        fileName?: string,
+        mimeType?: string,
+        localPath?: string
+    ): Promise<ISavedMessage> {
         await this.ensureInitialized();
         this.ensureSavedMessagesInitialized();
         const newMessage: ISavedMessage = {
@@ -258,10 +270,15 @@ export class DatabaseService {
             text,
             senderJid,
             key: key || undefined,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            isFile,
+            fileName,
+            mimeType,
+            localPath
         };
         this.db.data.savedMessages!.push(newMessage);
         await this.db.write();
+        return newMessage;
     }
 
     public async getSavedMessagesByContact(phoneOrJid: string): Promise<ISavedMessage[]> {
@@ -308,6 +325,23 @@ export class DatabaseService {
         await this.ensureInitialized();
         this.ensureSavedMessagesInitialized();
         return this.db.data.savedMessages!;
+    }
+
+    public async getSavedMessageById(id: string): Promise<ISavedMessage | undefined> {
+        await this.ensureInitialized();
+        this.ensureSavedMessagesInitialized();
+        const lowerId = id.toLowerCase();
+        return this.db.data.savedMessages!.find(m => m._id.toLowerCase() === lowerId);
+    }
+
+    public async deleteSavedMessageById(id: string): Promise<boolean> {
+        await this.ensureInitialized();
+        this.ensureSavedMessagesInitialized();
+        const lowerId = id.toLowerCase();
+        const originalLength = this.db.data.savedMessages!.length;
+        this.db.data.savedMessages = this.db.data.savedMessages!.filter(m => m._id.toLowerCase() !== lowerId);
+        await this.db.write();
+        return this.db.data.savedMessages.length < originalLength;
     }
 
     private ensureLinksInitialized(): void {
