@@ -15,6 +15,8 @@ import { RecordarCommand } from '../commands/RecordarCommand.js';
 import { ConfigCommand } from '../commands/ConfigCommand.js';
 import { SaveCommand } from '../commands/SaveCommand.js';
 import { SavedCommand } from '../commands/SavedCommand.js';
+import { EnlaceCommand } from '../commands/EnlaceCommand.js';
+import { ArchivoCommand } from '../commands/ArchivoCommand.js';
 
 const OWNER_JID = process.env.OWNER_JID;
 
@@ -41,6 +43,8 @@ export class CommandDispatcherHandler extends AbstractMessageHandler {
         this.commandMap.set('!config', new ConfigCommand());
         this.commandMap.set('!save', new SaveCommand());
         this.commandMap.set('!saved', new SavedCommand());
+        this.commandMap.set('!enlace', new EnlaceCommand());
+        this.commandMap.set('!archivo', new ArchivoCommand());
     }
 
     public async handle(message: WAMessage, sock: ReturnType<typeof makeWASocket>): Promise<void> {
@@ -63,7 +67,9 @@ export class CommandDispatcherHandler extends AbstractMessageHandler {
                 command instanceof RecordarCommand ||
                 command instanceof ConfigCommand ||
                 command instanceof SaveCommand ||
-                command instanceof SavedCommand
+                command instanceof SavedCommand ||
+                command instanceof EnlaceCommand ||
+                command instanceof ArchivoCommand
             ) {
                 if (!OWNER_JID || (message.key.fromMe === false && sender !== OWNER_JID) ) {
                     console.log(`Non-owner ${sender} tried to use admin command: ${commandKey}`);

@@ -8,3 +8,7 @@
 • `!save` / `!save as <key>`: (Respondiendo a un mensaje) Guarda el mensaje citado.
 • `!saved` / `!saved <numero>` / `!saved key <key>`: Consulta mensajes guardados.
 • `!saved delete <numero>`: Borra mensajes guardados de ese contacto.
+• `!enlace [<nombre> [<url>] / delete <nombre>]`: Guarda, consulta o elimina enlaces importantes.
+• `!archivo [<nombre_archivo>]`: Lista archivos del servidor o descarga uno.
+
+

@@ -44,12 +44,18 @@ interface DBConfig {
     sleepEndHour: number;
 }
 
+export interface ILink {
+    name: string;
+    url: string;
+}
+
 interface DatabaseSchema {
     users: DBUser[];
     messages: DBMessage[];
     reminders: IReminder[];
     config?: DBConfig;
     savedMessages?: ISavedMessage[];
+    links?: ILink[];
 }
 
 export class DatabaseService {
@@ -302,6 +308,49 @@ export class DatabaseService {
         await this.ensureInitialized();
         this.ensureSavedMessagesInitialized();
         return this.db.data.savedMessages!;
+    }
+
+    private ensureLinksInitialized(): void {
+        if (!this.db.data.links) {
+            this.db.data.links = [];
+        }
+    }
+
+    public async addLink(name: string, url: string): Promise<void> {
+        await this.ensureInitialized();
+        this.ensureLinksInitialized();
+        const lowerName = name.toLowerCase();
+        const existingIndex = this.db.data.links!.findIndex(l => l.name.toLowerCase() === lowerName);
+        if (existingIndex > -1) {
+            this.db.data.links![existingIndex].url = url;
+            this.db.data.links![existingIndex].name = name; // Update with casing from user
+        } else {
+            this.db.data.links!.push({ name, url });
+        }
+        await this.db.write();
+    }
+
+    public async getLink(name: string): Promise<ILink | undefined> {
+        await this.ensureInitialized();
+        this.ensureLinksInitialized();
+        const lowerName = name.toLowerCase();
+        return this.db.data.links!.find(l => l.name.toLowerCase() === lowerName);
+    }
+
+    public async getAllLinks(): Promise<ILink[]> {
+        await this.ensureInitialized();
+        this.ensureLinksInitialized();
+        return this.db.data.links!;
+    }
+
+    public async deleteLink(name: string): Promise<boolean> {
+        await this.ensureInitialized();
+        this.ensureLinksInitialized();
+        const lowerName = name.toLowerCase();
+        const originalLength = this.db.data.links!.length;
+        this.db.data.links = this.db.data.links!.filter(l => l.name.toLowerCase() !== lowerName);
+        await this.db.write();
+        return this.db.data.links.length < originalLength;
     }
 
     public async close(): Promise<void> {
