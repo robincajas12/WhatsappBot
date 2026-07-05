@@ -1,79 +1,101 @@
-import { Client, LocalAuth, Message } from 'whatsapp-web.js';
+import makeWASocket, { DisconnectReason, useMultiFileAuthState } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode-terminal';
-import { PingHandler } from './handlers/meHandlers/PingHandler';
-import { HelpHandler } from './handlers/meHandlers/HelpHandler';
-import { ProxyHandler } from './handlers/ProxyHandler';
-import FromMeHandler from './handlers/meHandlers/FromMeHandler';
-import MentionedMeHandler from './handlers/otherPeopleHandlers/MentionedMeHandler';
-import { AIResponseHandler } from './handlers/otherPeopleHandlers/AIResponseHandler';
-import dotEnv from 'dotenv';
-dotEnv.config();
+import { Boom } from '@hapi/boom';
+import pino from 'pino';
+import dotenv from 'dotenv';
 
-const client = new Client({
-    authStrategy: new LocalAuth({
-        dataPath: './session' // carpeta donde se guardan los datos
-    }),
-    puppeteer: {
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    }
+// New Command Pattern Handlers
+import { CommandDispatcherHandler } from './handlers/CommandDispatcherHandler.js';
+import { AIPermissionHandler } from './handlers/otherPeopleHandlers/AIPermissionHandler.js';
+import { AIResponseHandler } from './handlers/otherPeopleHandlers/AIResponseHandler.js';
+import { BusyModeHandler } from './handlers/otherPeopleHandlers/BusyModeHandler.js';
+import { GroupMessageBlocker } from './handlers/GroupMessageBlocker.js';
+
+// General Handlers
+import { PingHandler } from './handlers/meHandlers/PingHandler.js';
+import { HelpHandler } from './handlers/meHandlers/HelpHandler.js';
+
+dotenv.config({ path: ".env" });
+
+async function connectToWhatsApp() {
+    const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info');
+
+    const sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: true,
+        logger: pino({ level: 'silent' })
+    });
+
+    // --- Handler Chain Setup ---
+
+    // Build the public chain (for other users)
+    const publicChain = new GroupMessageBlocker();
+    const publicCommandDispatcher = new CommandDispatcherHandler();
+    const busyModeHandler = new BusyModeHandler();
+    const aiPermissionHandler = new AIPermissionHandler();
+    const aiResponseHandler = new AIResponseHandler();
+    const publicPingHandler = new PingHandler();
+    const publicHelpHandler = new HelpHandler();
+
+    publicChain.setNext(publicCommandDispatcher);
+    publicCommandDispatcher.setNext(busyModeHandler);
+    busyModeHandler.setNext(aiPermissionHandler);
+    aiPermissionHandler.setNext(aiResponseHandler);
+    aiResponseHandler.setNext(publicPingHandler);
+    publicPingHandler.setNext(publicHelpHandler);
+
+    // Build the admin chain (for you)
+    const adminChain = new GroupMessageBlocker();
+    const adminCommandDispatcher = new CommandDispatcherHandler();
+    const adminPingHandler = new PingHandler();
+    const adminHelpHandler = new HelpHandler();
+
+    adminChain.setNext(adminCommandDispatcher);
+    adminCommandDispatcher.setNext(adminPingHandler);
+    adminPingHandler.setNext(adminHelpHandler);
+
+
+    // --- Socket Event Listeners ---
+
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect, qr } = update;
+        if (qr) {
+            qrcode.generate(qr, { small: true });
+        }
+        if (connection === 'close') {
+            const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+            console.log('Connection closed due to ', lastDisconnect?.error, ', reconnecting ', shouldReconnect);
+            if (shouldReconnect) {
+                connectToWhatsApp();
+            }
+        } else if (connection === 'open') {
+            console.log('Opened connection');
+        }
+    });
+
+    sock.ev.on('creds.update', saveCreds);
+
+    sock.ev.on('messages.upsert', async m => {
+        const msg = m.messages[0];
+        if (!msg.message || msg.key.remoteJid === 'status@broadcast') {
+            return;
+        }
+
+        // Route message to the appropriate chain based on sender
+        if (msg.key.fromMe) {
+            await adminChain.handle(msg, sock);
+        } else {
+            await publicChain.handle(msg, sock);
+        }
+    });
+}
+
+connectToWhatsApp();
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-client.on('qr', (qr: string) => {
-    // Generate and scan this code with your phone
-    console.log('QR RECEIVED', qr);
-    console.log(qrcode.generate(qr, { small: true }));
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
 });
-
-client.on('ready', () => {
-    console.log('Client is ready!');
-});
-
-// 1. Creamos la cadena de responsabilidad
-// Me hanlders
-
-const fromMeHandler = new FromMeHandler();
-const messageChain = new PingHandler();
-messageChain.setNext(new HelpHandler());
-fromMeHandler.setNext(messageChain)
-
-// Group handlers
-const mentionedMeHandler = new MentionedMeHandler();
-mentionedMeHandler.setNext(new HelpHandler());
-
-// Other people handlers
-const otherPeopleChain = new AIResponseHandler();
-const otherPeoplePingHandler = new PingHandler();
-otherPeoplePingHandler.setNext(new HelpHandler());
-otherPeopleChain.setNext(otherPeoplePingHandler);
-
-
-const proxy = new ProxyHandler(
-    fromMeHandler,
-    // Handlers para mensajes de otros contactos
-    otherPeopleChain,
-    mentionedMeHandler
-);
-const handleMessage = (msg: Message) => {
-    console.log('MESSAGE DETAILS', { from: msg.from, to: msg.to, body: msg.body, fromMe: msg.fromMe });
-    // Inicia el procesamiento en el primer eslabón de la cadena
-    proxy.handle(msg, client);
-};
-
-// Evento para mensajes de OTROS contactos
-client.on('message', (msg: Message) => {
-    // Revisa que el mensaje no sea de un estado (status@broadcast)
-    if (msg.from.includes('@broadcast')) {
-        return;
-    }
-    handleMessage(msg);
-});
-
-// Evento para TUS PROPIOS mensajes (comandos personales)
-client.on('message_create', (msg: Message) => {
-    // Filtra para que solo procese los mensajes que tú envías
-    if (msg.fromMe) {
-        handleMessage(msg);
-    }
-});
-
-client.initialize();

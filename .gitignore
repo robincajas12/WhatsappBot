@@ -1,5 +1,5 @@
 node_modules
+baileys_auth_info
 dist
-.wwebjs_cache
-session
 .env
+*.db

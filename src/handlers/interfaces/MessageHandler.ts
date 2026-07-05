@@ -1,6 +1,7 @@
-import { Client, Message } from "whatsapp-web.js";
+import { WAMessage } from '@whiskeysockets/baileys';
+import makeWASocket from '@whiskeysockets/baileys';
 
 export interface MessageHandler {
     setNext(handler: MessageHandler): MessageHandler;
-    handle(message: Message, client: Client): Promise<void>;
+    handle(message: WAMessage, sock: ReturnType<typeof makeWASocket>): Promise<void>;
 }

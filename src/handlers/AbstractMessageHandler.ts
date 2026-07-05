@@ -1,5 +1,6 @@
-import { Client, Message } from "whatsapp-web.js";
-import { MessageHandler } from "./interfaces/MessageHandler";
+import { WAMessage } from '@whiskeysockets/baileys';
+import makeWASocket from '@whiskeysockets/baileys';
+import { MessageHandler } from './interfaces/MessageHandler.js';
 
 export abstract class AbstractMessageHandler implements MessageHandler {
     private nextHandler: MessageHandler | null = null;
@@ -9,9 +10,9 @@ export abstract class AbstractMessageHandler implements MessageHandler {
         return handler;
     }
 
-    public async handle(message: Message, client: Client): Promise<void> {
+    public async handle(message: WAMessage, sock: ReturnType<typeof makeWASocket>): Promise<void> {
         if (this.nextHandler) {
-            await this.nextHandler.handle(message, client);
+            await this.nextHandler.handle(message, sock);
         }
     }
 }

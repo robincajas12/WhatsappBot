@@ -1,20 +1,22 @@
-import { Client, Message } from "whatsapp-web.js";
-import { AbstractMessageHandler } from "../AbstractMessageHandler";
+import { WAMessage } from '@whiskeysockets/baileys';
+import makeWASocket from '@whiskeysockets/baileys';
+import { AbstractMessageHandler } from '../AbstractMessageHandler.js';
 
 class MentionedMeHandler extends AbstractMessageHandler {
-    public async handle(message: Message, client: Client): Promise<void> {
-         if (message.from.endsWith('@g.us')) { // solo grupos
-        const mentions = message.mentionedIds || [];
-        const me = client.info.me._serialized; // aquí se obtiene correctamente
+    public async handle(message: WAMessage, sock: ReturnType<typeof makeWASocket>): Promise<void> {
+        const remoteJid = message.key.remoteJid;
+        if (remoteJid && remoteJid.endsWith('@g.us')) { // solo grupos
+            const mentions = message.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+            const me = sock.user?.id;
 
-        if (mentions.includes(me)) {
-            // El mensaje me menciona
-            console.log("Manejando mensaje donde me mencionan:", message);
-            await super.handle(message, client);
-            return;
+            if (me && mentions.includes(me)) {
+                // El mensaje me menciona
+                console.log("Manejando mensaje donde me mencionan:", message);
+                await super.handle(message, sock);
+                return;
+            }
         }
-    }
-        await super.handle(message, client);
+        await super.handle(message, sock);
     }
 }
 export default MentionedMeHandler;

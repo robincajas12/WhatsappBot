@@ -1,58 +1,70 @@
-import { Client, Message } from "whatsapp-web.js";
-import { AbstractMessageHandler } from "../AbstractMessageHandler"; 
-// ✅ Importación de la SDK oficial: @google/genai
-import { GoogleGenAI } from "@google/genai"; 
+import { WAMessage } from "@whiskeysockets/baileys";
+import makeWASocket from "@whiskeysockets/baileys";
+import { AbstractMessageHandler } from "../AbstractMessageHandler.js";
+import { GoogleGenAI } from "@google/genai";
+import { DatabaseService, ChatMessage } from "../../database.js";
+import Gemini from "../../ai/services/Gemini.js";
+import AI from "../../ai/interfaces/AI.js";
 
-// IMPORTANT: Replace "YOUR_GEMINI_API_KEY" with your actual Gemini API key
-// 💡 NOTA: Se recomienda usar process.env.GEMINI_API_KEY
-const API_KEY = process.env.API_KEY;
+const API_KEY = process.env.GOOGLE_API_KEY;
 
 export class AIResponseHandler extends AbstractMessageHandler {
-    private static ai: GoogleGenAI | null; 
+    private static ai: AI | null;
+    private static dbService = new DatabaseService();
 
     constructor() {
         super();
-        
     }
-    // singleton ai
-    private static getAIInstance(): GoogleGenAI {
+
+    private static getAIInstance(): AI {
         if (!AIResponseHandler.ai) {
-            AIResponseHandler.ai = new GoogleGenAI({apiKey: API_KEY});
+            if (!API_KEY) throw new Error("Falta API_KEY en las variables de entorno");
+            AIResponseHandler.ai = new Gemini(API_KEY);
         }
         return AIResponseHandler.ai;
     }
 
-    public async handle(message: Message, client: Client): Promise<void> {
-        if (!AIResponseHandler.getAIInstance()) {
-            // Si la IA no está configurada, pasa al siguiente manejador
-            await super.handle(message, client);
-            return;
+    public async handle(message: WAMessage, sock: ReturnType<typeof makeWASocket>): Promise<void> {
+        // This handler is now only called if AIPermissionHandler allows it.
+        const userId = message.key.remoteJid;
+        const messageBody = message.message?.conversation || message.message?.extendedTextMessage?.text || "";
+
+        if (!userId || !messageBody) {
+            return; // Stop if no user or message body
         }
 
         try {
-            const systemInstruction = `You are a helpful assistant for a busy person. Someone sent them the following WhatsApp message. Write a short, friendly, and concise reply in the same language as the message. Keep it under 3 sentences. use plan text only, no markdown or special formatting.`;
+            const aiInstance = AIResponseHandler.getAIInstance();
+            const history = await AIResponseHandler.dbService.getHistory(userId);
+            const newConversation: ChatMessage[] = [
+                ...history,
+                { role: "user", parts: [{ text: messageBody }] }
+            ];
 
-            
-            // 🛑 CORRECCIÓN CLAVE: El método generateContent se llama a través de this.ai.models
-            const result = await AIResponseHandler.getAIInstance().models.generateContent({
-                model: "gemini-2.5-flash", // Modelo para respuestas rápidas y concisas
-                contents: message.body,
-                config: {
-                    // ✅ Usamos systemInstruction aquí
-                    systemInstruction:  systemInstruction                }
-            });
-            
-            // ✅ Uso de result.text para obtener la respuesta
-            const text = result.text?.trim() || null;
+            const systemInstruction = `You are a helpful assistant. Someone sent the following WhatsApp message. Based on the provided history, write a short, friendly, and concise reply in the same language as the message. Keep it under 3 sentences. Use plain text only, no markdown or special formatting. Default language is Spanish.`;
 
-            if (text) {
-                await message.reply(text);
+            const result = await aiInstance.ask(
+                newConversation,
+                systemInstruction
+            );
+
+            const responseText = result;
+
+            if (responseText) {
+                const footer = "\n\n---\nEsta respuesta fue generada por IA. Para más opciones, escribe !menu.";
+                const fullResponse = responseText + footer;
+                await sock.sendMessage(userId, { text: fullResponse });
+                
+                // Save interaction to the database (original response without footer)
+                await AIResponseHandler.dbService.addMessage(userId, 'user', messageBody);
+                await AIResponseHandler.dbService.addMessage(userId, 'model', responseText);
+            } else {
+                console.warn("Respuesta vacía del modelo.");
             }
 
         } catch (error) {
-            console.error("Error calling Gemini API:", error);
-            // If AI fails, just pass to the next handler
-            await super.handle(message, client);
-        }    
+            console.error("Error en AIResponseHandler:", error);
+        }
+        // We don't call super.handle() here because this is the end of this specific chain.
     }
 }
