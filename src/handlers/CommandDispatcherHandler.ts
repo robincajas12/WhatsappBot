@@ -51,8 +51,10 @@ export class CommandDispatcherHandler extends AbstractMessageHandler {
         const messageBody = (message.message?.conversation || message.message?.extendedTextMessage?.text || '').trim();
         const sender = message.key.remoteJid;
 
-        // Find a command key that the message starts with
-        const commandKey = [...this.commandMap.keys()].find(key => messageBody.toLowerCase().startsWith(key));
+        // Find a command key that the message starts with (longest prefix match first)
+        const commandKey = [...this.commandMap.keys()]
+            .sort((a, b) => b.length - a.length)
+            .find(key => messageBody.toLowerCase().startsWith(key));
 
         if (commandKey) {
             const command = this.commandMap.get(commandKey)!;
