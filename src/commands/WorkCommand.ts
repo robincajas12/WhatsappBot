@@ -130,7 +130,7 @@ export class WorkCommand implements Command {
 
             // Default: create a new session with the prompt formed by args
             const prompt = args.join(' ');
-            await sock.sendMessage(targetDest, { text: `⏳ Creando sesión Jules con prompt...` });
+            await sendBotMessage(sock,targetDest, `⏳ Creando sesión Jules con prompt...` );
 
             const session = await (client as any).session({
                 prompt,

@@ -9,7 +9,7 @@
   "activeSessions": [
     {
       "userId": "193359478059020@lid",
-      "sessionId": "7541099070004608996"
+      "sessionId": "12310306326054907211"
     }
   ],
   "julesSessions": [
@@ -24,6 +24,18 @@
       "sessionId": "7541099070004608996",
       "shortId": "0294",
       "createdAt": "2026-07-05T22:19:23.870Z"
+    },
+    {
+      "ownerUserId": "193359478059020@lid",
+      "sessionId": "6979036689033963551",
+      "shortId": "6400",
+      "createdAt": "2026-07-05T22:42:17.395Z"
+    },
+    {
+      "ownerUserId": "193359478059020@lid",
+      "sessionId": "12310306326054907211",
+      "shortId": "7006",
+      "createdAt": "2026-07-05T22:50:04.108Z"
     }
   ]
 }
