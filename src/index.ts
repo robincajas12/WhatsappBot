@@ -1,8 +1,9 @@
-import makeWASocket, { DisconnectReason, useMultiFileAuthState } from '@whiskeysockets/baileys';
+import makeWASocket, { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import qrcode from 'qrcode-terminal';
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import dotenv from 'dotenv';
+import { DatabaseService } from './database.js';
 
 // New Command Pattern Handlers
 import { CommandDispatcherHandler } from './handlers/CommandDispatcherHandler.js';
@@ -19,10 +20,12 @@ dotenv.config({ path: ".env" });
 
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info');
+    const { version, isLatest } = await fetchLatestBaileysVersion();
+    console.log(`using WA v${version.join('.')}, isLatest: ${isLatest}`);
 
     const sock = makeWASocket({
+        version,
         auth: state,
-        printQRInTerminal: true,
         logger: pino({ level: 'silent' })
     });
 
@@ -56,6 +59,7 @@ async function connectToWhatsApp() {
 
 
     // --- Socket Event Listeners ---
+    let reminderInterval: NodeJS.Timeout | null = null;
 
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
@@ -63,6 +67,10 @@ async function connectToWhatsApp() {
             qrcode.generate(qr, { small: true });
         }
         if (connection === 'close') {
+            if (reminderInterval) {
+                clearInterval(reminderInterval);
+                reminderInterval = null;
+            }
             const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
             console.log('Connection closed due to ', lastDisconnect?.error, ', reconnecting ', shouldReconnect);
             if (shouldReconnect) {
@@ -70,6 +78,34 @@ async function connectToWhatsApp() {
             }
         } else if (connection === 'open') {
             console.log('Opened connection');
+            
+            // Start checking for pending reminders every 60 seconds
+            if (!reminderInterval) {
+                const dbService = DatabaseService.getInstance();
+                reminderInterval = setInterval(async () => {
+                    try {
+                        const pending = await dbService.getPendingReminders();
+                        for (const reminder of pending) {
+                            let text = `⏰ *RECORDATORIO:* \n\n> ${reminder.text}`;
+                            if (reminder.targetJid && reminder.targetJid !== reminder.userId) {
+                                const contactDisplay = reminder.targetJid.split('@')[0];
+                                text = `⏰ *RECORDATORIO (Contacto: wa.me/${contactDisplay}):* \n\n> ${reminder.text}`;
+                                
+                                // Send discrete message directly to the target contact
+                                try {
+                                    await sock.sendMessage(reminder.targetJid, { text: reminder.text });
+                                } catch (contactErr) {
+                                    console.error(`Error al enviar mensaje discreto al contacto ${reminder.targetJid}:`, contactErr);
+                                }
+                            }
+                            await sock.sendMessage(reminder.userId, { text });
+                            await dbService.deleteReminder(reminder._id as string);
+                        }
+                    } catch (err) {
+                        console.error("Error al procesar recordatorios periódicos:", err);
+                    }
+                }, 60000);
+            }
         }
     });
 

@@ -5,7 +5,7 @@ import { DatabaseService } from "../../database.js";
 import { BotStateService } from "../../services/BotStateService.js";
 
 export class AIPermissionHandler extends AbstractMessageHandler {
-    private static dbService = new DatabaseService();
+    private static dbService = DatabaseService.getInstance();
     private static stateService = BotStateService.getInstance();
 
     public async handle(message: WAMessage, sock: ReturnType<typeof makeWASocket>): Promise<void> {

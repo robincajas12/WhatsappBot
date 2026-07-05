@@ -4,7 +4,7 @@ import { Command } from './Command.js';
 import { DatabaseService } from '../database.js';
 
 export class AiOffCommand implements Command {
-    private static dbService = new DatabaseService();
+    private static dbService = DatabaseService.getInstance();
 
     public async execute(message: WAMessage, sock: ReturnType<typeof makeWASocket>): Promise<void> {
         const userId = message.key.remoteJid;

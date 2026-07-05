@@ -1,0 +1,6 @@
+*🔒 Comandos de Administrador (Solo Tú):*
+• `!scripts`: Lista los scripts en la carpeta `scripts/`.
+• `!run <script> [args]`: Ejecuta un script.
+• `!busy on` / `!busy off`: Activa/desactiva el modo ocupado.
+• `!add <número>` / `!remove <número>`: Permite/bloquea la IA para un usuario.
+• `!recordar <tiempo> <mensaje>`: Guarda un recordatorio persistente (ej: `!recordar 3d comprar agua` o `!recordar 25/12 navidad`).

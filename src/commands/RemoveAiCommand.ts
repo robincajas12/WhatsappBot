@@ -6,7 +6,7 @@ import { DatabaseService } from '../database.js';
 const OWNER_JID = process.env.OWNER_JID;
 
 export class RemoveAiCommand implements Command {
-    private static dbService = new DatabaseService();
+    private static dbService = DatabaseService.getInstance();
 
     public async execute(message: WAMessage, sock: ReturnType<typeof makeWASocket>, args: string[]): Promise<void> {
         const sender = message.key.remoteJid;

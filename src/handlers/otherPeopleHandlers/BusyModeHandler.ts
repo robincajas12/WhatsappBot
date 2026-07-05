@@ -2,6 +2,8 @@ import { WAMessage } from '@whiskeysockets/baileys';
 import makeWASocket from '@whiskeysockets/baileys';
 import { AbstractMessageHandler } from '../AbstractMessageHandler.js';
 import { BotStateService } from '../../services/BotStateService.js';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export class BusyModeHandler extends AbstractMessageHandler {
     private stateService = BotStateService.getInstance();
@@ -20,13 +22,18 @@ export class BusyModeHandler extends AbstractMessageHandler {
             // Mark them as notified so they only get this message once per busy period
             this.stateService.addNotifiedUser(userId);
 
-            // Construct and send the busy message
-            const busyMessage = `Hola, en este momento me encuentro ocupado. Tu mensaje ha sido recibido y lo leeré tan pronto como sea posible.`
-            const menuText = "🤖 Opciones del Bot 🤖\n\nPuedes interactuar con el bot usando los siguientes comandos:\n\n• `!ai on`: Activa las respuestas automáticas de IA.\n• `!ai off`: Desactiva las respuestas automáticas de IA."
+            // Construct and send the busy message dynamically from file
+            let busyMessage = '¡Hola! Ando algo ocupado ahora, pero te leo e intento responderte en cuanto pueda.';
+            try {
+                const templatePath = path.join(process.cwd(), 'templates', 'busy_message.txt');
+                if (fs.existsSync(templatePath)) {
+                    busyMessage = fs.readFileSync(templatePath, 'utf8').trim();
+                }
+            } catch (err) {
+                console.error("Error al leer plantilla de busy_message:", err);
+            }
             
-            const fullMessage = `${busyMessage}\n\n${menuText}`;
-
-            await sock.sendMessage(userId, { text: fullMessage });
+            await sock.sendMessage(userId, { text: busyMessage });
 
             // The message should now continue to the AI handlers so the user gets a response.
             await super.handle(message, sock);
