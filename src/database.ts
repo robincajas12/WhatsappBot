@@ -31,10 +31,25 @@ export interface IReminder {
     targetJid?: string; // JID of the contact this reminder is about
 }
 
+export interface ISavedMessage {
+    _id: string;
+    text: string;
+    senderJid: string;
+    key?: string;
+    timestamp: string; // ISO string
+}
+
+interface DBConfig {
+    sleepStartHour: number;
+    sleepEndHour: number;
+}
+
 interface DatabaseSchema {
     users: DBUser[];
     messages: DBMessage[];
     reminders: IReminder[];
+    config?: DBConfig;
+    savedMessages?: ISavedMessage[];
 }
 
 export class DatabaseService {
@@ -197,6 +212,96 @@ export class DatabaseService {
         await this.ensureInitialized();
         this.db.data.reminders = this.db.data.reminders.filter(r => r._id !== id);
         await this.db.write();
+    }
+
+    public async getSleepConfig(): Promise<{ start: number; end: number }> {
+        await this.ensureInitialized();
+        if (!this.db.data.config) {
+            this.db.data.config = {
+                sleepStartHour: parseInt(process.env.SLEEP_START_HOUR || "23"),
+                sleepEndHour: parseInt(process.env.SLEEP_END_HOUR || "6")
+            };
+            await this.db.write();
+        }
+        return {
+            start: this.db.data.config.sleepStartHour,
+            end: this.db.data.config.sleepEndHour
+        };
+    }
+
+    public async setSleepConfig(start: number, end: number): Promise<void> {
+        await this.ensureInitialized();
+        this.db.data.config = {
+            sleepStartHour: start,
+            sleepEndHour: end
+        };
+        await this.db.write();
+    }
+
+    private ensureSavedMessagesInitialized(): void {
+        if (!this.db.data.savedMessages) {
+            this.db.data.savedMessages = [];
+        }
+    }
+
+    public async addSavedMessage(text: string, senderJid: string, key?: string): Promise<void> {
+        await this.ensureInitialized();
+        this.ensureSavedMessagesInitialized();
+        const newMessage: ISavedMessage = {
+            _id: Math.random().toString(36).substring(2, 9),
+            text,
+            senderJid,
+            key: key || undefined,
+            timestamp: new Date().toISOString()
+        };
+        this.db.data.savedMessages!.push(newMessage);
+        await this.db.write();
+    }
+
+    public async getSavedMessagesByContact(phoneOrJid: string): Promise<ISavedMessage[]> {
+        await this.ensureInitialized();
+        this.ensureSavedMessagesInitialized();
+        const cleanSearch = phoneOrJid.replace(/\D/g, '');
+        return this.db.data.savedMessages!.filter(m => {
+            const cleanJid = m.senderJid.split('@')[0];
+            return cleanJid === cleanSearch || m.senderJid === phoneOrJid;
+        });
+    }
+
+    public async deleteSavedMessagesByContact(phoneOrJid: string): Promise<number> {
+        await this.ensureInitialized();
+        this.ensureSavedMessagesInitialized();
+        const cleanSearch = phoneOrJid.replace(/\D/g, '');
+        const originalCount = this.db.data.savedMessages!.length;
+        this.db.data.savedMessages = this.db.data.savedMessages!.filter(m => {
+            const cleanJid = m.senderJid.split('@')[0];
+            return cleanJid !== cleanSearch && m.senderJid !== phoneOrJid;
+        });
+        await this.db.write();
+        return originalCount - this.db.data.savedMessages.length;
+    }
+
+    public async getSavedMessagesByKey(key: string): Promise<ISavedMessage[]> {
+        await this.ensureInitialized();
+        this.ensureSavedMessagesInitialized();
+        const lowerKey = key.toLowerCase();
+        return this.db.data.savedMessages!.filter(m => m.key?.toLowerCase() === lowerKey);
+    }
+
+    public async deleteSavedMessagesByKey(key: string): Promise<number> {
+        await this.ensureInitialized();
+        this.ensureSavedMessagesInitialized();
+        const lowerKey = key.toLowerCase();
+        const originalCount = this.db.data.savedMessages!.length;
+        this.db.data.savedMessages = this.db.data.savedMessages!.filter(m => m.key?.toLowerCase() !== lowerKey);
+        await this.db.write();
+        return originalCount - this.db.data.savedMessages.length;
+    }
+
+    public async getAllSavedMessages(): Promise<ISavedMessage[]> {
+        await this.ensureInitialized();
+        this.ensureSavedMessagesInitialized();
+        return this.db.data.savedMessages!;
     }
 
     public async close(): Promise<void> {

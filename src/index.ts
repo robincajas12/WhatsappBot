@@ -11,6 +11,7 @@ import { AIPermissionHandler } from './handlers/otherPeopleHandlers/AIPermission
 import { AIResponseHandler } from './handlers/otherPeopleHandlers/AIResponseHandler.js';
 import { BusyModeHandler } from './handlers/otherPeopleHandlers/BusyModeHandler.js';
 import { GroupMessageBlocker } from './handlers/GroupMessageBlocker.js';
+import { SleepModeHandler } from './handlers/otherPeopleHandlers/SleepModeHandler.js';
 
 // General Handlers
 import { PingHandler } from './handlers/meHandlers/PingHandler.js';
@@ -33,6 +34,7 @@ async function connectToWhatsApp() {
 
     // Build the public chain (for other users)
     const publicChain = new GroupMessageBlocker();
+    const sleepModeHandler = new SleepModeHandler();
     const publicCommandDispatcher = new CommandDispatcherHandler();
     const busyModeHandler = new BusyModeHandler();
     const aiPermissionHandler = new AIPermissionHandler();
@@ -40,7 +42,8 @@ async function connectToWhatsApp() {
     const publicPingHandler = new PingHandler();
     const publicHelpHandler = new HelpHandler();
 
-    publicChain.setNext(publicCommandDispatcher);
+    publicChain.setNext(sleepModeHandler);
+    sleepModeHandler.setNext(publicCommandDispatcher);
     publicCommandDispatcher.setNext(busyModeHandler);
     busyModeHandler.setNext(aiPermissionHandler);
     aiPermissionHandler.setNext(aiResponseHandler);

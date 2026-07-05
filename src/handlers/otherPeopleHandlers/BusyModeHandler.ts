@@ -5,8 +5,11 @@ import { BotStateService } from '../../services/BotStateService.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { DatabaseService } from '../../database.js';
+
 export class BusyModeHandler extends AbstractMessageHandler {
     private stateService = BotStateService.getInstance();
+    private dbService = DatabaseService.getInstance();
 
     public async handle(message: WAMessage, sock: ReturnType<typeof makeWASocket>): Promise<void> {
         const userId = message.key.remoteJid;
@@ -17,7 +20,13 @@ export class BusyModeHandler extends AbstractMessageHandler {
             return await super.handle(message, sock);
         }
 
-        // If busy mode is on, and user has not been notified yet during this period
+        // If the user has AI enabled, omit the static busy message and pass directly to the AI handler
+        const isAiEnabled = await this.dbService.isAiEnabled(userId);
+        if (isAiEnabled) {
+            return await super.handle(message, sock);
+        }
+
+        // If busy mode is on, AI is not enabled, and user has not been notified yet during this period
         if (!this.stateService.hasBeenNotified(userId)) {
             // Mark them as notified so they only get this message once per busy period
             this.stateService.addNotifiedUser(userId);

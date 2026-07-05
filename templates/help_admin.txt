@@ -3,4 +3,8 @@
 • `!run <script> [args]`: Ejecuta un script.
 • `!busy on` / `!busy off`: Activa/desactiva el modo ocupado.
 • `!add <número>` / `!remove <número>`: Permite/bloquea la IA para un usuario.
-• `!recordar <tiempo> <mensaje>`: Guarda un recordatorio persistente (ej: `!recordar 3d comprar agua` o `!recordar 25/12 navidad`).
+• `!recordar <tiempo> <mensaje>`: Guarda un recordatorio persistente (ej: `!recordar 3d comprar agua`).
+• `!config set sleep <inicio> <fin>`: Cambia las horas de descanso (ej: `!config set sleep 21 5`).
+• `!save` / `!save as <key>`: (Respondiendo a un mensaje) Guarda el mensaje citado.
+• `!saved` / `!saved <numero>` / `!saved key <key>`: Consulta mensajes guardados.
+• `!saved delete <numero>`: Borra mensajes guardados de ese contacto.

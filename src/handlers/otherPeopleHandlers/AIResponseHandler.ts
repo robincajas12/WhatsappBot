@@ -35,6 +35,12 @@ export class AIResponseHandler extends AbstractMessageHandler {
             return; // Stop if no user or message body
         }
 
+        // Limit the message length to prevent token-wasting spam or prompt injections
+        if (messageBody.length > 600) {
+            console.log(`[AI] Mensaje ignorado de ${userId} por longitud excesiva: ${messageBody.length} caracteres.`);
+            return;
+        }
+
         try {
             const aiInstance = AIResponseHandler.getAIInstance();
             const history = await AIResponseHandler.dbService.getHistory(userId);

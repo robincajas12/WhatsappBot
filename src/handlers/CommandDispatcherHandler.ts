@@ -12,6 +12,9 @@ import { BusyOffCommand } from '../commands/BusyOffCommand.js';
 import { ListScriptsCommand } from '../commands/ListScriptsCommand.js';
 import { RunScriptCommand } from '../commands/RunScriptCommand.js';
 import { RecordarCommand } from '../commands/RecordarCommand.js';
+import { ConfigCommand } from '../commands/ConfigCommand.js';
+import { SaveCommand } from '../commands/SaveCommand.js';
+import { SavedCommand } from '../commands/SavedCommand.js';
 
 const OWNER_JID = process.env.OWNER_JID;
 
@@ -35,6 +38,9 @@ export class CommandDispatcherHandler extends AbstractMessageHandler {
         this.commandMap.set('!scripts', new ListScriptsCommand());
         this.commandMap.set('!run', new RunScriptCommand());
         this.commandMap.set('!recordar', new RecordarCommand());
+        this.commandMap.set('!config', new ConfigCommand());
+        this.commandMap.set('!save', new SaveCommand());
+        this.commandMap.set('!saved', new SavedCommand());
     }
 
     public async handle(message: WAMessage, sock: ReturnType<typeof makeWASocket>): Promise<void> {
@@ -54,7 +60,10 @@ export class CommandDispatcherHandler extends AbstractMessageHandler {
                 command instanceof BusyOffCommand ||
                 command instanceof ListScriptsCommand ||
                 command instanceof RunScriptCommand ||
-                command instanceof RecordarCommand
+                command instanceof RecordarCommand ||
+                command instanceof ConfigCommand ||
+                command instanceof SaveCommand ||
+                command instanceof SavedCommand
             ) {
                 if (!OWNER_JID || (message.key.fromMe === false && sender !== OWNER_JID) ) {
                     console.log(`Non-owner ${sender} tried to use admin command: ${commandKey}`);
