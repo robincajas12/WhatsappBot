@@ -44,8 +44,7 @@ export class ChatCommand implements Command {
         if (!sender) return;
 
         const myJid = sock.user?.id ? (sock.user.id.split(':')[0] + '@s.whatsapp.net') : (process.env.OWNER_JID || sender);
-        const isSelfChat = (sender === myJid);
-        const targetDest = isSelfChat ? sender : myJid;
+        const targetDest = sender;
 
         if (args.length === 0) {
             await sock.sendMessage(targetDest, { 
